@@ -141,7 +141,10 @@ def logout():
 def home():
     if 'vendor_admin_id' in session:
         return redirect(url_for('dashboard'))
-    return render_template('landing.html')
+    try:
+        return render_template('landing.html')
+    except Exception:
+        return redirect(url_for('login'))
 
 @app.route('/dashboard')
 @login_required
