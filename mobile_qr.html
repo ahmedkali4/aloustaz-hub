@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}مسح كود QR للاتصال بالموبايل{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7 col-md-9">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="card-header bg-navy text-white py-3 text-center" style="background-color: #152238; border-bottom: 3px solid #c5a059;">
+                <h5 class="fw-bold mb-1 text-warning"><i class="fa-solid fa-qrcode me-2"></i> مسح كود الـ QR لفتح المنصة من الموبايل</h5>
+                <p class="mb-0 text-white-50 small">امسح الكود بكاميرا هاتفك لتفتح لوحة إدارة المبيعات والتراخيص أونلاين من أي مكان في العالم</p>
+            </div>
+            <div class="card-body p-4 text-center">
+                <div class="alert alert-success d-inline-flex align-items-center gap-2 py-2 px-3 mb-3 shadow-sm">
+                    <i class="fa-solid fa-cloud-bolt text-success fs-5"></i>
+                    <span class="fw-bold">المنصة السحابية متصلة ومباشرة 24/7 أونلاين!</span>
+                </div>
+
+                <div class="my-3 d-flex justify-content-center">
+                    <div class="p-3 bg-white border border-2 border-primary border-opacity-25 rounded-4 shadow-sm" style="display: inline-block;">
+                        <img src="{{ qr_image_url }}" alt="Vendor QR Code" class="img-fluid rounded-3" style="width: 260px; height: 260px;">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label text-muted small fw-bold">الرابط المباشر للمنصة السحابية:</label>
+                    <div class="input-group dir-ltr mb-2" style="max-width: 480px; margin: 0 auto;">
+                        <input type="text" class="form-control text-center font-monospace" id="tunnelUrlInput" value="{{ tunnel_url }}" readonly>
+                        <button class="btn btn-primary" type="button" onclick="navigator.clipboard.writeText('{{ tunnel_url }}'); alert('تم نسخ الرابط بنجاح!');">
+                            <i class="fa-regular fa-copy me-1"></i> نسخ
+                        </button>
+                    </div>
+                </div>
+
+                <div class="text-start bg-light p-3 rounded-3 border mb-3">
+                    <h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-mobile-screen text-primary me-2"></i>طريقة الاستخدام السريع من الموبايل:</h6>
+                    <ol class="small mb-0 pe-3 text-muted">
+                        <li class="mb-1">وجّه كاميرا هاتفك (آيفون أو أندرويد) نحو الكود واضغط على الرابط.</li>
+                        <li class="mb-1">سجل الدخول بحسابك: المستخدم <code>ahmed</code> • المرور <code>admin123</code> (أو كلمة مرورك المحدثة).</li>
+                        <li>من إعدادات المتصفح في موبايلك، اضغط <strong>"إضافة إلى الشاشة الرئيسية (Add to Home Screen)"</strong> ليظهر لك كأيقونة تطبيق دائم على الهاتف.</li>
+                    </ol>
+                </div>
+            </div>
+            <div class="card-footer bg-white border-top py-3 text-center">
+                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-sm px-4">
+                    <i class="fa-solid fa-arrow-right me-1"></i> العودة للوحة المؤشرات
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

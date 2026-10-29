@@ -985,20 +985,29 @@ def settings_page():
 @app.route('/mobile-qr')
 @login_required
 def mobile_qr_view():
-    base_dir = BASE_DIR
-    url_file = os.path.join(base_dir, "current_tunnel_url.txt")
-    tunnel_url = None
-    if os.path.exists(url_file):
-        try:
-            with open(url_file, "r", encoding="utf-8") as f:
-                tunnel_url = f.read().strip()
-        except Exception:
-            pass
+    # If running on Vercel or cloud/domain, automatically use the live HTTPS URL
+    if os.environ.get('VERCEL') or 'vercel.app' in request.host or not request.host.startswith('127.0.0.1'):
+        current_url = request.host_url.rstrip('/')
+        if current_url.startswith('http://') and not request.host.startswith('127.0.0.1'):
+            current_url = 'https://' + current_url[7:]
+    else:
+        # Local development fallback
+        base_dir = BASE_DIR
+        url_file = os.path.join(base_dir, "current_tunnel_url.txt")
+        current_url = None
+        if os.path.exists(url_file):
+            try:
+                with open(url_file, "r", encoding="utf-8") as f:
+                    current_url = f.read().strip()
+            except Exception:
+                pass
+        if not current_url:
+            current_url = request.host_url.rstrip('/')
 
-    static_qr = os.path.join(base_dir, "static", "vendor_qr.png")
-    qr_available = os.path.exists(static_qr) and tunnel_url
+    qr_image_url = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={quote(current_url)}"
+    qr_available = True
 
-    return render_template('mobile_qr.html', tunnel_url=tunnel_url, qr_available=qr_available)
+    return render_template('mobile_qr.html', tunnel_url=current_url, qr_image_url=qr_image_url, qr_available=qr_available)
 
 # ----------------- Sales Reps & Agents Routes -----------------
 
