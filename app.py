@@ -137,14 +137,63 @@ def logout():
 
 # ----------------- Public Landing Page & Dashboard Routes -----------------
 
+
+def _push_landing_event(event_type: str, ip: str, ua: str, ref: str):
+    """Logs a landing page visitor or download click event locally and to Turso Cloud"""
+    try:
+        conn = database.get_db()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO landing_events (event_type, ip_address, user_agent, referrer)
+            VALUES (?, ?, ?, ?)
+        """, (event_type, ip or '', ua or '', ref or ''))
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+
+    try:
+        _push_action_to_turso(
+            "INSERT INTO landing_events (event_type, ip_address, user_agent, referrer) VALUES (?, ?, ?, ?)",
+            [
+                {"type": "text", "value": event_type},
+                {"type": "text", "value": ip or ""},
+                {"type": "text", "value": ua or ""},
+                {"type": "text", "value": ref or ""}
+            ]
+        )
+    except Exception:
+        pass
+
 @app.route('/')
 def home():
     if 'vendor_admin_id' in session:
         return redirect(url_for('dashboard'))
     try:
+        ip = request.headers.get('CF-Connecting-IP') or request.headers.get('X-Forwarded-For', '').split(',')[0].strip() or request.remote_addr or '127.0.0.1'
+        ua = request.headers.get('User-Agent', '')[:250]
+        ref = request.headers.get('Referer', '')[:250]
+        _push_landing_event('PAGE_VIEW', ip, ua, ref)
+    except Exception:
+        pass
+
+    try:
         return render_template('landing.html')
     except Exception:
         return redirect(url_for('login'))
+
+@app.route('/download')
+@app.route('/download/v1.0')
+def track_download():
+    """Tracks download button clicks and redirects seamlessly to Google Drive"""
+    try:
+        ip = request.headers.get('CF-Connecting-IP') or request.headers.get('X-Forwarded-For', '').split(',')[0].strip() or request.remote_addr or '127.0.0.1'
+        ua = request.headers.get('User-Agent', '')[:250]
+        ref = request.headers.get('Referer', '')[:250]
+        _push_landing_event('DOWNLOAD_CLICK', ip, ua, ref)
+    except Exception:
+        pass
+    return redirect("https://drive.google.com/file/d/1lvS5eNAj5hYz1nqZhxuepn2C_GSHjxoJ/view?usp=sharing")
 
 @app.route('/dashboard')
 @login_required
@@ -204,6 +253,18 @@ def dashboard():
     """)
     upcoming_installments = c.fetchall()
 
+    # Landing Traffic & Conversion Metrics
+    try:
+        c.execute("SELECT COUNT(*) FROM landing_events WHERE event_type = 'PAGE_VIEW'")
+        landing_views = c.fetchone()[0]
+        c.execute("SELECT COUNT(DISTINCT ip_address) FROM landing_events WHERE event_type = 'PAGE_VIEW'")
+        landing_unique = c.fetchone()[0]
+        c.execute("SELECT COUNT(*) FROM landing_events WHERE event_type = 'DOWNLOAD_CLICK'")
+        landing_downloads = c.fetchone()[0]
+        landing_conversion = round((landing_downloads / landing_unique * 100), 1) if landing_unique > 0 else 0.0
+    except Exception:
+        landing_views, landing_unique, landing_downloads, landing_conversion = 0, 0, 0, 0.0
+
     # Recent licenses issued
     c.execute("""
         SELECT l.*, cl.full_name as client_name, cl.firm_name, cl.phone
@@ -236,7 +297,11 @@ def dashboard():
         'active_reps_count': active_reps_count,
         'total_rep_earned': total_rep_earned,
         'total_rep_paid': total_rep_paid,
-        'total_rep_balance': total_rep_balance
+        'total_rep_balance': total_rep_balance,
+        'landing_views': landing_views,
+        'landing_unique': landing_unique,
+        'landing_downloads': landing_downloads,
+        'landing_conversion': landing_conversion
     }
 
     return render_template(
@@ -1620,6 +1685,12 @@ def _sync_turso_into_local_hub():
                         "sql": "SELECT lawyer_name, phone, city, interested_edition, status, notes, created_at FROM leads"
                     }
                 },
+                {
+                    "type": "execute",
+                    "stmt": {
+                        "sql": "SELECT id, event_type, ip_address, user_agent, referrer, created_at FROM landing_events ORDER BY id DESC LIMIT 500"
+                    }
+                },
                 {"type": "close"}
             ]
         }).encode('utf-8')
@@ -1685,6 +1756,22 @@ def _sync_turso_into_local_hub():
                         d.get('trial_started_at'), d.get('trial_expires_at'),
                         d.get('last_heartbeat'), d.get('broadcast_message') or ''
                     ))
+
+            # 3. Sync landing_events
+            if len(data["results"]) > 2 and "response" in data["results"][2]:
+                ev_res = data["results"][2]["response"]["result"]
+                ev_cols = [col["name"] for col in ev_res["cols"]]
+                for row in ev_res["rows"]:
+                    ev_vals = [r.get("value") for r in row]
+                    ev_d = dict(zip(ev_cols, ev_vals))
+                    ev_id = ev_d.get('id')
+                    if ev_id:
+                        c.execute("SELECT id FROM landing_events WHERE id = ?", (ev_id,))
+                        if not c.fetchone():
+                            c.execute("""
+                                INSERT INTO landing_events (id, event_type, ip_address, user_agent, referrer, created_at)
+                                VALUES (?, ?, ?, ?, ?, ?)
+                            """, (ev_id, ev_d.get('event_type'), ev_d.get('ip_address'), ev_d.get('user_agent'), ev_d.get('referrer'), ev_d.get('created_at')))
 
             # 2. Sync leads
             if len(data["results"]) > 1 and "response" in data["results"][1]:

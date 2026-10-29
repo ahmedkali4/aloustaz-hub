@@ -359,6 +359,18 @@ def init_db():
         )
     """)
 
+    # 13. Landing Traffic & Conversion Analytics
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS landing_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_type TEXT NOT NULL,
+            ip_address TEXT,
+            user_agent TEXT,
+            referrer TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
     # Create default admin user if none exists:
     cursor.execute("SELECT id FROM admin_users WHERE username = 'ahmed'")
     if not cursor.fetchone():
