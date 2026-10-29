@@ -150,6 +150,9 @@
                                 {% else %}
                                 <span>غير مسجل هاتف</span>
                                 {% endif %}
+                                {% if d.app_version %}
+                                <span class="badge {% if d.app_version == '2.0' %}bg-primary{% else %}bg-secondary{% endif %} text-white ms-1" style="font-size: 0.72rem;">إصدار {{ d.app_version }}</span>
+                                {% endif %}
                                 {% if d.client_id %}
                                 <a href="{{ url_for('client_detail', id=d.client_id) }}" class="badge bg-light text-primary border ms-1">سجل العميل ↗</a>
                                 {% endif %}
