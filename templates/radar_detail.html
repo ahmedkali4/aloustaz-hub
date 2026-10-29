@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block title %}تفاصيل الجهاز وسجل الرادار: {{ device.firm_name }} | الأستاذ{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4 py-4">
+
+    <!-- Breadcrumb & Nav -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 pb-3 border-bottom">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="{{ url_for('radar_dashboard') }}" class="text-decoration-none">رادار الأجهزة</a></li>
+                    <li class="breadcrumb-item active">{{ device.firm_name }}</li>
+                </ol>
+            </nav>
+            <h3 class="fw-bold text-navy mb-0 d-flex align-items-center gap-2">
+                <span>{{ device.firm_name }}</span>
+                {% if device.status in ['LOCKED', 'REVOKED'] %}
+                <span class="badge bg-danger fs-6">مقفول مركزياً 🔒</span>
+                {% elif device.tamper_flags and device.tamper_flags != 'NONE' %}
+                <span class="badge bg-danger fs-6 animate__animated animate__flash">إنذار تلاعب ({{ device.tamper_flags }}) 🚨</span>
+                {% elif device.current_tier == 'TRIAL' %}
+                <span class="badge bg-info fs-6">ديمو (متبقي {{ device.days_remaining }} أيام)</span>
+                {% else %}
+                <span class="badge bg-success fs-6">نشط رسمي ({{ device.current_tier }})</span>
+                {% endif %}
+            </h3>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('radar_dashboard') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="fa-solid fa-arrow-right me-1"></i> العودة للرادار
+            </a>
+            {% if device.client_id %}
+            <a href="{{ url_for('client_detail', id=device.client_id) }}" class="btn btn-primary btn-sm">
+                <i class="fa-solid fa-user-tie me-1"></i> فتح ملف العميل في المبيعات
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left: Device Stats & Remote Controls -->
+        <div class="col-12 col-lg-5">
+
+            <!-- Card: Specs & Hardware -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="fw-bold text-navy mb-0"><i class="fa-solid fa-laptop-code text-primary me-2"></i> بيانات الجهاز والعتاد</h5>
+                </div>
+                <div class="card-body p-3">
+                    <table class="table table-sm table-borderless mb-0">
+                        <tr>
+                            <th class="text-muted" style="width: 40%;">كود الجهاز (ID):</th>
+                            <td><code class="dir-ltr fw-bold text-dark bg-light px-2 py-1 rounded">{{ device.machine_id }}</code></td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">المكتب / المحامي:</th>
+                            <td class="fw-bold text-navy">{{ device.firm_name }}</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">رقم الهاتف:</th>
+                            <td>{{ device.contact_phone or 'غير مسجل' }}</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">إصدار البرنامج:</th>
+                            <td><span class="badge bg-secondary">{{ device.app_version or '2.0' }}</span></td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">آخر عنوان IP:</th>
+                            <td class="dir-ltr text-muted">{{ device.last_ip or 'غير معروف' }}</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">آخر اتصال (Ping):</th>
+                            <td class="fw-bold">{{ device.last_heartbeat or 'لم يتصل' }}</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">أول تثبيت (Beacon):</th>
+                            <td>{{ device.trial_started_at or device.created_at }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Card: Activity & Usage Metrics -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="fw-bold text-navy mb-0"><i class="fa-solid fa-chart-pie text-success me-2"></i> مؤشر النشاط الفعلي (Engagement)</h5>
+                </div>
+                <div class="card-body p-3">
+                    <div class="row text-center g-2">
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded border">
+                                <div class="text-muted small">عدد القضايا المدخلة</div>
+                                <div class="fs-3 fw-bold text-primary">{{ device.cases_count|default(0) }}</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded border">
+                                <div class="text-muted small">الجلسات المجدولة</div>
+                                <div class="fs-3 fw-bold text-info">{{ device.hearings_count|default(0) }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% if device.cases_count > 10 %}
+                    <div class="alert alert-success mt-3 mb-0 py-2 small">
+                        <i class="fa-solid fa-fire text-danger me-1"></i> <strong>عميل عالي التفاعل:</strong> العميل يعتمد على البرنامج بشكل فعال في قضاياه الحقيقية.
+                    </div>
+                    {% elif device.cases_count == 0 %}
+                    <div class="alert alert-warning mt-3 mb-0 py-2 small">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i> <strong>تفاعل منخفض:</strong> العميل لم يسجل أي قضايا حتى الآن. يحتاج لمكالمة دعم وتوجيه.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Card: Remote Control Center -->
+            <div class="card border-0 shadow-sm border-top border-4 border-primary">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="fw-bold text-navy mb-0"><i class="fa-solid fa-gamepad text-primary me-2"></i> مركز التحكم عن بُعد (Remote Actions)</h5>
+                </div>
+                <div class="card-body p-3">
+                    <div class="d-grid gap-2">
+
+                        <!-- Lock / Unlock Toggle -->
+                        {% if device.status in ['LOCKED', 'REVOKED'] %}
+                        <form method="POST" action="{{ url_for('radar_device_action', id=device.id) }}">
+                            <input type="hidden" name="action_type" value="unlock">
+                            <button type="submit" class="btn btn-success w-100 py-2 fw-bold shadow-sm">
+                                <i class="fa-solid fa-lock-open me-2"></i> فك الحظر والتفعيل الفوري للنسخة
+                            </button>
+                        </form>
+                        {% else %}
+                        <form method="POST" action="{{ url_for('radar_device_action', id=device.id) }}" onsubmit="return confirm('تحذير: هذا الإجراء سيوقف تشغيل البرنامج عند العميل فوراً عند اتصاله بالإنترنت. هل تريد الاستمرار؟');">
+                            <input type="hidden" name="action_type" value="lock">
+                            <button type="submit" class="btn btn-outline-danger w-100 py-2 fw-bold">
+                                <i class="fa-solid fa-lock me-2"></i> قفل النسخة فوراً عن بُعد (Kill-Switch)
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        <!-- Read Only Controls (Separate explicit Enable / Disable) -->
+                        {% if device.is_read_only %}
+                        <form method="POST" action="{{ url_for('radar_device_action', id=device.id) }}">
+                            <input type="hidden" name="action_type" value="disable_read_only">
+                            <button type="submit" class="btn btn-success w-100 py-2 fw-bold shadow-sm">
+                                <i class="fa-solid fa-lock-open me-2"></i> إلغاء وضع القراءة فقط (استعادة صلاحيات الإدخال والحفظ)
+                            </button>
+                        </form>
+                        {% else %}
+                        <form method="POST" action="{{ url_for('radar_device_action', id=device.id) }}">
+                            <input type="hidden" name="action_type" value="enable_read_only">
+                            <button type="submit" class="btn btn-outline-warning text-dark w-100 py-2 fw-bold">
+                                <i class="fa-solid fa-file-invoice-dollar me-2"></i> تفعيل وضع القراءة فقط (تجميد الإدخال لتأخر سداد القسط)
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        <!-- Extend Days -->
+                        <form method="POST" action="{{ url_for('radar_device_action', id=device.id) }}" class="input-group">
+                            <input type="hidden" name="action_type" value="extend_days">
+                            <input type="number" name="param_val" value="3" min="1" max="30" class="form-control text-center" style="max-width: 80px;">
+                            <button type="submit" class="btn btn-outline-info fw-bold">
+                                <i class="fa-solid fa-plus-circle me-1"></i> تمديد الديمو (أيام)
+                            </button>
+                        </form>
+
+                        <!-- Upgrade Tier -->
+                        <form method="POST" action="{{ url_for('radar_device_action', id=device.id) }}" class="input-group">
+                            <input type="hidden" name="action_type" value="upgrade">
+                            <select name="param_val" class="form-select">
+                                <option value="STARTER" {% if device.current_tier == 'STARTER' %}selected{% endif %}>ترقية إلى Starter (الانطلاق)</option>
+                                <option value="LITE" {% if device.current_tier == 'LITE' %}selected{% endif %}>ترقية إلى Lite</option>
+                                <option value="FULL" {% if device.current_tier == 'FULL' %}selected{% endif %}>ترقية إلى Full / Pro (المحترف)</option>
+                            </select>
+                            <button type="submit" class="btn btn-outline-success fw-bold">ترقية</button>
+                        </form>
+
+                        <hr class="my-2">
+
+                        <!-- Direct Message Banner -->
+                        <form method="POST" action="{{ url_for('radar_device_action', id=device.id) }}">
+                            <input type="hidden" name="action_type" value="broadcast">
+                            <label class="form-label small fw-bold text-muted">إرسال رسالة تظهر في هيدر البرنامج عند العميل:</label>
+                            <div class="input-group">
+                                <input type="text" name="param_val" value="{{ device.broadcast_message or '' }}" class="form-control form-control-sm" placeholder="اكتب الرسالة هنا...">
+                                <button type="submit" class="btn btn-sm btn-dark"><i class="fa-solid fa-paper-plane me-1"></i> إرسال</button>
+                            </div>
+                        </form>
+
+                        <hr class="my-2">
+
+                        <form method="POST" action="{{ url_for('radar_device_action', id=device.id) }}" onsubmit="return confirm('هل تريد بالتأكيد حذف هذا الجهاز وسجلاته من الرادار؟');">
+                            <input type="hidden" name="action_type" value="delete">
+                            <button type="submit" class="btn btn-sm btn-link text-danger text-decoration-none w-100 text-end">
+                                <i class="fa-solid fa-trash me-1"></i> حذف سجل هذا الجهاز من الرادار
+                            </button>
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right: Telemetry Audit Logs & History -->
+        <div class="col-12 col-lg-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                    <h5 class="fw-bold text-navy mb-0"><i class="fa-solid fa-clock-rotate-left text-primary me-2"></i> سجل النبضات وإشارات الأمان (Audit Logs)</h5>
+                    <span class="badge bg-secondary">{{ logs|length }} حدث مسجل</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 650px; overflow-y: auto;">
+                        <table class="table table-hover align-middle mb-0 small">
+                            <thead class="table-light text-muted sticky-top">
+                                <tr>
+                                    <th>الوقت والتاريخ</th>
+                                    <th>نوع الحدث</th>
+                                    <th>الباقة المبلغة</th>
+                                    <th>عنوان IP</th>
+                                    <th>التفاصيل المرفقة</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in logs %}
+                                <tr class="{% if log.event_type in ['TAMPER_ALERT', 'ROLLBACK_ALERT'] %}table-danger text-danger fw-bold{% elif log.event_type == 'INSTALL' %}table-info{% endif %}">
+                                    <td class="text-nowrap">{{ log.created_at }}</td>
+                                    <td>
+                                        {% if log.event_type == 'INSTALL' %}
+                                        <span class="badge bg-primary">تثبيت أولي (Install)</span>
+                                        {% elif log.event_type == 'HEARTBEAT' %}
+                                        <span class="badge bg-light text-dark border">نبضة دورية (Ping)</span>
+                                        {% elif log.event_type == 'TAMPER_ALERT' %}
+                                        <span class="badge bg-danger">إنذار قرصنة / كراك 🚨</span>
+                                        {% elif log.event_type == 'ROLLBACK_ALERT' %}
+                                        <span class="badge bg-danger">تلاعب بالساعة ⏰</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ log.event_type }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td><code>{{ log.reported_tier or '-' }}</code></td>
+                                    <td class="dir-ltr text-muted">{{ log.ip_address or '-' }}</td>
+                                    <td class="small text-truncate" style="max-width: 250px;" title="{{ log.payload_json or '' }}">
+                                        {{ log.payload_json or '-' }}
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">
+                                        لا توجد سجلات نبضات مسجلة لهذا الجهاز حتى الآن.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

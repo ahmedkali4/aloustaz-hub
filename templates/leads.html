@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}متابعة العملاء المحتملين (Leads){% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <h4 class="fw-bold mb-1"><i class="fa-solid fa-users-viewfinder text-warning me-2"></i> متابعة العملاء المتوقعين (Sales Leads)</h4>
+        <p class="text-muted small mb-0">جدول الاتصالات ومواعيد المتابعة للمحامين المهتمين قبل إتمام الشراء</p>
+    </div>
+    <button type="button" class="btn btn-gold btn-sm d-flex align-items-center gap-1 shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#addLeadModal">
+        <i class="fa-solid fa-plus"></i> إضافة عميل محتمل جديد
+    </button>
+</div>
+
+<div class="card border-0 shadow-sm rounded-3 bg-white overflow-hidden">
+    <div class="card-body p-0">
+        {% if leads %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 text-nowrap">
+                <thead class="table-light small">
+                    <tr>
+                        <th>اسم المحامي</th>
+                        <th>الهاتف</th>
+                        <th>المحافظة</th>
+                        <th>الباقة المهتم بها</th>
+                        <th>موعد المتابعة القادم</th>
+                        <th>الحالة</th>
+                        <th>ملاحظات</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lead in leads %}
+                    <tr>
+                        <td class="fw-bold text-dark">{{ lead.lawyer_name }}</td>
+                        <td>
+                            <a href="https://wa.me/{{ lead.phone|replace('+','')|replace(' ','') }}" target="_blank" class="btn btn-outline-success btn-sm py-0 px-2">
+                                <i class="fa-brands fa-whatsapp me-1"></i> <span class="dir-ltr">{{ lead.phone }}</span>
+                            </a>
+                        </td>
+                        <td>{{ lead.city or '-' }}</td>
+                        <td>
+                            {% if lead.interested_edition == 'FULL' %}
+                            <span class="badge badge-edition-full">Full Pro</span>
+                            {% elif lead.interested_edition == 'STARTER' %}
+                            <span class="badge badge-edition-starter">Starter</span>
+                            {% else %}
+                            <span class="badge badge-edition-lite">Lite</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if lead.expected_contact_date %}
+                            <span class="badge bg-warning bg-opacity-25 text-dark fw-bold">
+                                <i class="fa-solid fa-calendar me-1"></i> {{ lead.expected_contact_date }}
+                            </span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if lead.status == 'تم الشراء' %}
+                            <span class="badge bg-success">تم الشراء ✓</span>
+                            {% elif lead.status == 'مهتم جداً' %}
+                            <span class="badge bg-warning text-dark">مهتم جداً 🔥</span>
+                            {% else %}
+                            <span class="badge bg-info text-dark">{{ lead.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="small text-muted" style="max-width: 250px;">{{ lead.notes or '-' }}</td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <a href="{{ url_for('generate_license') }}?client_name={{ lead.lawyer_name|urlencode }}&phone={{ lead.phone|urlencode }}&city={{ (lead.city or '')|urlencode }}&license_type={{ lead.interested_edition }}" class="btn btn-sm btn-outline-primary py-1 px-2" title="تحويل لعميل وتوليد ترخيص">
+                                    <i class="fa-solid fa-key me-1"></i> بيع
+                                </a>
+                                <form method="POST" action="{{ url_for('delete_lead', id=lead.id) }}" onsubmit="return confirm('هل تريد حذف سجل المتابعة؟')">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-2"><i class="fa-solid fa-trash"></i></button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="fa-solid fa-users-viewfinder fa-3x text-muted mb-3"></i>
+            <p class="mb-0 fw-semibold">لا يوجد عملاء في جدول المتابعة حالياً. اضغط "إضافة عميل محتمل" للبدء.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal: Add Lead -->
+<div class="modal fade" id="addLeadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('leads_list') }}">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-user-plus text-warning me-2"></i> إضافة محامٍ لجدول المتابعة</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">اسم المحامي / المستشار: <span class="text-danger">*</span></label>
+                        <input type="text" name="lawyer_name" class="form-control" required placeholder="أ.د / ...">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">رقم الهاتف / الواتساب: <span class="text-danger">*</span></label>
+                        <input type="text" name="phone" class="form-control" required placeholder="+2010...">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">المحافظة / المدينة:</label>
+                        <input type="text" name="city" class="form-control" placeholder="القاهرة / طنطا / المنصورة...">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">الباقة المهتم بها:</label>
+                        <select name="interested_edition" class="form-select">
+                            <option value="STARTER" selected>🚀 باقة الانطلاق (Starter)</option>
+                            <option value="FULL">👑 النسخة الكاملة (Pro)</option>
+                            <option value="LITE">🪶 النسخة الاقتصادية (Lite)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">تاريخ المتابعة / الاتصال القادم:</label>
+                        <input type="date" name="expected_contact_date" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">ملاحظات عن رغبات المحامي:</label>
+                        <textarea name="notes" class="form-control" rows="2" placeholder="طلب الاتصال بعد أول الشهر، يفضل الدفع عبر إنستاباي..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-gold btn-sm fw-bold px-3">حفظ العميل في المتابعة</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

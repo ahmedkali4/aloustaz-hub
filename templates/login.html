@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}تسجيل دخول المالك{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 70vh;">
+    <div class="col-12 col-sm-10 col-md-6 col-lg-4">
+        <div class="card border-0 shadow-lg rounded-4 overflow-hidden" style="border: 2px solid #c5a059 !important;">
+            <div class="p-4 text-center text-white" style="background-color: #152238;">
+                <div class="mb-3">
+                    <i class="fa-solid fa-user-shield fa-3x text-warning"></i>
+                </div>
+                <h4 class="fw-bold mb-1">لوحة تحكم المالك والمبيعات</h4>
+                <p class="text-white-50 small mb-0">سري ومخصص لإدارة التراخيص والأرباح</p>
+            </div>
+
+            <div class="card-body p-4 p-md-4 bg-white">
+                <form method="POST" action="{{ url_for('login') }}">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted"><i class="fa-solid fa-user me-1 text-primary"></i> اسم المستخدم:</label>
+                        <input type="text" name="username" class="form-control form-control-lg fs-6" required placeholder="ahmed" autofocus>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-muted"><i class="fa-solid fa-lock me-1 text-primary"></i> كلمة المرور / Master PIN:</label>
+                        <input type="password" name="password" class="form-control form-control-lg fs-6" required placeholder="أدخل كلمة المرور...">
+                    </div>
+
+                    <button type="submit" class="btn btn-gold btn-lg w-100 shadow-sm py-2">
+                        <i class="fa-solid fa-arrow-right-to-bracket me-2"></i> دخول لوحة التحكم
+                    </button>
+                </form>
+
+                <div class="text-center text-muted small mt-4 pt-2 border-top">
+                    المالك المعتمد: <strong>Ahmed Mabrouk</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

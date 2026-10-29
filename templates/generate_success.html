@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}تم توليد الترخيص بنجاح{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-10 col-lg-8">
+        <div class="card border-0 shadow-lg rounded-4 overflow-hidden bg-white mb-4" style="border: 2px solid #198754 !important;">
+            <div class="card-header bg-success text-white py-4 text-center">
+                <i class="fa-solid fa-circle-check fa-3x mb-2"></i>
+                <h4 class="fw-bold mb-1">تم توليد مفتاح الترخيص بنجاح!</h4>
+                <p class="mb-0 text-white-50 small">تم توثيق الترخيص وتوقيعه رقمياً وحفظه في السجل التاريخي لقاعدة بياناتك</p>
+            </div>
+
+            <div class="card-body p-4 p-md-5">
+                <!-- Summary Details -->
+                <div class="row g-3 mb-4 bg-light p-3 rounded-3">
+                    <div class="col-6 col-md-3">
+                        <small class="text-muted d-block">اسم العميل:</small>
+                        <strong class="text-dark">{{ client_name }}</strong>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <small class="text-muted d-block">اسم المكتب:</small>
+                        <strong class="text-dark">{{ firm_name }}</strong>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <small class="text-muted d-block">نوع الباقة:</small>
+                        <span class="badge bg-warning text-dark fw-bold">{{ ed_title }}</span>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <small class="text-muted d-block">مدة السريان:</small>
+                        {% if not expires_at %}
+                        <span class="badge bg-success">دائم مدى الحياة 👑</span>
+                        {% else %}
+                        <span class="badge bg-danger">{{ expires_at[:10] }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- License Key Token Box -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold text-dark"><i class="fa-solid fa-key text-warning me-1"></i> مفتاح التفعيل الرقمي (License Key):</label>
+                    <div class="position-relative">
+                        <textarea id="tokenArea" class="form-control font-monospace bg-light p-3 fs-6 border-2" rows="4" readonly>{{ token }}</textarea>
+                    </div>
+                    <div class="d-flex justify-content-end mt-2">
+                        <button type="button" class="btn btn-dark btn-sm px-3 fw-bold" onclick="copyToken()">
+                            <i class="fa-solid fa-copy me-1"></i> <span id="copyBtnText">نسخ المفتاح</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- WhatsApp One-Click Delivery Button -->
+                <div class="p-3 bg-success bg-opacity-10 rounded-3 border border-success mb-4 text-center">
+                    <h6 class="fw-bold text-success mb-2"><i class="fa-brands fa-whatsapp fa-lg me-1"></i> إرسال الترخيص مباشرة للمحامي:</h6>
+                    <p class="text-muted small mb-3">تم تجهيز رسالة مهنية ترحيبية باسم العميل ومفتاح الترخيص وكود جهازه وطريقة التفعيل بنقرة واحدة:</p>
+                    <a href="{{ wa_url }}" target="_blank" class="btn btn-success btn-lg px-4 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
+                        <i class="fa-brands fa-whatsapp fa-xl"></i> إرسال الكود للعميل عبر WhatsApp الآن
+                    </a>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex flex-wrap justify-content-between gap-2 border-top pt-3">
+                    <a href="{{ url_for('client_detail', id=client_id) }}" class="btn btn-outline-primary">
+                        <i class="fa-solid fa-folder-open me-1"></i> فتح ملف العميل وسجل الدفعات
+                    </a>
+                    <a href="{{ url_for('generate_license') }}" class="btn btn-outline-secondary">
+                        <i class="fa-solid fa-plus me-1"></i> توليد ترخيص لعميل آخر
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyToken() {
+    var copyText = document.getElementById("tokenArea");
+    copyText.select();
+    copyText.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(copyText.value).then(() => {
+        var btn = document.getElementById("copyBtnText");
+        btn.textContent = "تم النسخ بنجاح! ✓";
+        setTimeout(() => { btn.textContent = "نسخ المفتاح"; }, 2500);
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+{% block title %}كشف حساب المندوب - {{ rep.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <h4 class="fw-bold mb-0">{{ rep.name }}</h4>
+            <span class="badge bg-navy text-warning border px-2 py-1 font-monospace fs-6" style="background-color: #152238;">
+                {{ rep.rep_code or ('REP-' ~ rep.id) }}
+            </span>
+            {% if rep.is_active %}
+            <span class="badge bg-success"><i class="fa-solid fa-circle-check me-1"></i> نشط</span>
+            {% else %}
+            <span class="badge bg-secondary">موقوف</span>
+            {% endif %}
+        </div>
+        <p class="text-muted small mb-0">النطاق والمحكمة: <strong>{{ rep.court_coverage or rep.city or 'عام' }}</strong> &bull; تاريخ التسجيل: {{ rep.created_at[:10] }}</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="https://wa.me/{{ rep.phone|replace('+','')|replace(' ','') }}" target="_blank" class="btn btn-success btn-sm d-flex align-items-center gap-1 shadow-sm px-3">
+            <i class="fa-brands fa-whatsapp fa-lg"></i> تواصل واتساب
+        </a>
+        <button type="button" class="btn btn-gold btn-sm d-flex align-items-center gap-1 shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#payoutModal">
+            <i class="fa-solid fa-money-bill-transfer"></i> صرف عمولة للمندوب 💰
+        </button>
+        <a href="{{ url_for('reps_list') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="fa-solid fa-arrow-right me-1"></i> العودة لسجل المناديب
+        </a>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+    <!-- Sales count -->
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100 border-start border-4 border-primary">
+            <span class="text-muted small fw-bold d-block mb-1">إجمالي المبيعات المنجزة</span>
+            <div class="fs-3 fw-bold text-dark">{{ rep_clients|length }} <span class="fs-6 text-muted fw-normal">مكتب</span></div>
+            <div class="small text-primary mt-1"><i class="fa-solid fa-building-columns me-1"></i> عملاء تابعين للمندوب</div>
+        </div>
+    </div>
+
+    <!-- Total earned -->
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100 border-start border-4 border-success">
+            <span class="text-muted small fw-bold d-block mb-1">إجمالي العمولات المكتسبة</span>
+            <div class="fs-3 fw-bold text-success">{{ "{:,.0f}".format(rep.total_earned) }} ج.م</div>
+            <div class="small text-muted mt-1"><i class="fa-solid fa-coins me-1"></i> استحقاق مبيعات</div>
+        </div>
+    </div>
+
+    <!-- Total paid -->
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100 border-start border-4 border-info">
+            <span class="text-muted small fw-bold d-block mb-1">العمولات المنصرفة فعلياً</span>
+            <div class="fs-3 fw-bold text-info">{{ "{:,.0f}".format(rep.total_paid) }} ج.م</div>
+            <div class="small text-muted mt-1"><i class="fa-solid fa-check-circle me-1"></i> تم تحويلها للمندوب</div>
+        </div>
+    </div>
+
+    <!-- Balance due -->
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100 border-start border-4 border-danger">
+            <span class="text-muted small fw-bold d-block mb-1">الرصيد المتبقي المستحق</span>
+            <div class="fs-3 fw-bold text-danger">{{ "{:,.0f}".format(rep.balance) }} ج.م</div>
+            <div class="small text-danger mt-1"><i class="fa-solid fa-hourglass-half me-1"></i> مستحق للصرف</div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs: Clients Sold / Commissions Ledger -->
+<div class="card border-0 shadow-sm rounded-3 bg-white mb-4">
+    <div class="card-header bg-white border-bottom p-0">
+        <ul class="nav nav-tabs card-header-tabs m-0 px-3" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active fw-bold py-3" data-bs-toggle="tab" data-bs-target="#clientsTab">
+                    <i class="fa-solid fa-building-columns text-primary me-1"></i> المكاتب والعملاء المباعة عن طريقه ({{ rep_clients|length }})
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link fw-bold py-3 text-success" data-bs-toggle="tab" data-bs-target="#ledgerTab">
+                    <i class="fa-solid fa-receipt text-success me-1"></i> كشف حساب العمولات والتحويلات ({{ commissions|length }})
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    <div class="card-body p-0">
+        <div class="tab-content">
+            <!-- Tab 1: Clients Sold -->
+            <div class="tab-pane fade show active" id="clientsTab">
+                {% if rep_clients %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 text-nowrap">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>اسم المستشار والمكتب</th>
+                                <th>الهاتف</th>
+                                <th>المحافظة</th>
+                                <th>الباقة المباعة</th>
+                                <th>قيمة البيعة</th>
+                                <th>عمولة المندوب</th>
+                                <th>تاريخ البيع</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in rep_clients %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('client_detail', id=c.id) }}" class="fw-bold text-dark text-decoration-none d-block">
+                                        {{ c.firm_name }}
+                                    </a>
+                                    <small class="text-muted">{{ c.full_name }}</small>
+                                </td>
+                                <td class="dir-ltr text-end">{{ c.phone }}</td>
+                                <td><span class="small text-muted">{{ c.city or '-' }}</span></td>
+                                <td>
+                                    {% if c.current_edition in ['FULL', 'ENTERPRISE_LIFETIME'] %}
+                                    <span class="badge bg-warning text-dark">Full Pro</span>
+                                    {% elif c.current_edition in ['STARTER', 'STARTER_EDITION'] %}
+                                    <span class="badge bg-success">Starter (20)</span>
+                                    {% else %}
+                                    <span class="badge bg-info text-dark">Lite</span>
+                                    {% endif %}
+                                </td>
+                                <td class="fw-bold text-dark">{{ "{:,.0f}".format(c.total_price) }} ج.م</td>
+                                <td><span class="badge bg-success fs-6">{{ "{:,.0f}".format(c.rep_commission or 0) }} ج.م</span></td>
+                                <td class="small text-muted">{{ c.created_at[:10] }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-basket-shopping display-4 text-muted mb-2"></i>
+                    <p class="mb-0">لا توجد مبيعات مسجلة لهذا المندوب حتى الآن.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Tab 2: Commissions Ledger -->
+            <div class="tab-pane fade" id="ledgerTab">
+                {% if commissions %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 text-nowrap">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>البيان والتفاصيل</th>
+                                <th>قيمة البيعة</th>
+                                <th>المبلغ (المستحق / المنصرف)</th>
+                                <th>طريقة التحويل / الإثبات</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cm in commissions %}
+                            <tr>
+                                <td class="small">{{ cm.paid_date or cm.created_at[:10] }}</td>
+                                <td>
+                                    <strong class="text-dark">{{ cm.notes }}</strong>
+                                    {% if cm.firm_name %}<small class="text-muted d-block">{{ cm.firm_name }} ({{ cm.client_name }})</small>{% endif %}
+                                </td>
+                                <td>
+                                    {% if cm.sale_amount > 0 %}
+                                    {{ "{:,.0f}".format(cm.sale_amount) }} ج.م
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if cm.commission_amount > 0 %}
+                                    <span class="text-success fw-bold fs-6">+ {{ "{:,.0f}".format(cm.commission_amount) }} ج.م (استحقاق)</span>
+                                    {% else %}
+                                    <span class="text-danger fw-bold fs-6">- {{ "{:,.0f}".format(-cm.commission_amount) }} ج.م (صرف)</span>
+                                    {% endif %}
+                                </td>
+                                <td class="small">
+                                    {% if cm.payout_method %}
+                                    <span class="badge bg-light text-dark border">{{ cm.payout_method }}</span>
+                                    {% if cm.transaction_ref %}<code>{{ cm.transaction_ref }}</code>{% endif %}
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if cm.status == 'مسدد' %}
+                                    <span class="badge bg-success"><i class="fa-solid fa-check-circle me-1"></i> مسدد</span>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i> مستحق</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-receipt display-4 text-muted mb-2"></i>
+                    <p class="mb-0">لا توجد حركات مالية مسجلة بعد في كشف الحساب.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Payout Commission -->
+<div class="modal fade" id="payoutModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('rep_payout', id=rep.id) }}">
+                <div class="modal-header bg-navy text-white" style="background-color: #152238; border-bottom: 3px solid #c5a059;">
+                    <h5 class="modal-title fw-bold text-warning"><i class="fa-solid fa-hand-holding-dollar me-2"></i> صرف عمولة للمندوب</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="alert alert-light border mb-3">
+                        <div class="small text-muted">المندوب: <strong>{{ rep.name }}</strong> ({{ rep.rep_code }})</div>
+                        <div class="small text-muted">الرصيد المستحق حالياً: <strong class="text-danger fs-6">{{ "{:,.0f}".format(rep.balance) }} ج.م</strong></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">المبلغ المراد صرفه وتحويله (ج.م): <span class="text-danger">*</span></label>
+                        <input type="number" step="50" name="amount" class="form-control fw-bold" required value="{{ rep.balance if rep.balance > 0 else 0 }}" max="{{ rep.balance if rep.balance > 0 else 999999 }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">طريقة التحويل:</label>
+                        <select name="payout_method" class="form-select">
+                            <option value="إنستاباي (InstaPay)">إنستاباي (InstaPay)</option>
+                            <option value="فودافون كاش (Vodafone Cash)">فودافون كاش (Vodafone Cash)</option>
+                            <option value="نقداً (كاش)">نقداً (كاش يدوي)</option>
+                            <option value="تحويل بنكي">تحويل بنكي</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">رقم العملية / المرجع (اختياري):</label>
+                        <input type="text" name="transaction_ref" class="form-control" placeholder="TXN-...">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">ملاحظات التحويل:</label>
+                        <input type="text" name="notes" class="form-control" placeholder="مثلاً: سداد عمولة بيع مكتب النخبة">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-gold btn-sm fw-bold px-4">
+                        <i class="fa-solid fa-check-circle me-1"></i> تأكيد صرف المبلغ وتحديث الرصيد
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

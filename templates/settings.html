@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}إعدادات لوحة التحكم{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+        <div class="card border-0 shadow-sm rounded-3 bg-white overflow-hidden">
+            <div class="card-header bg-dark text-white py-3 border-bottom border-2 border-warning">
+                <h5 class="fw-bold mb-0"><i class="fa-solid fa-gear text-warning me-2"></i> بيانات المالك وكلمة المرور</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('settings_page') }}">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">اسم المالك / المسؤول:</label>
+                        <input type="text" name="full_name" class="form-control" required value="{{ admin.full_name }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">رقم الهاتف والواتساب:</label>
+                        <input type="text" name="phone" class="form-control" required value="{{ admin.phone }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">البريد الإلكتروني:</label>
+                        <input type="email" name="email" class="form-control" required value="{{ admin.email }}">
+                    </div>
+
+                    <hr class="my-4">
+
+                    <h6 class="fw-bold text-danger mb-3"><i class="fa-solid fa-lock me-2"></i> تغيير كلمة المرور / Master PIN</h6>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-muted">كلمة المرور الجديدة (اتركها فارغة إذا لم ترغب بالتغيير):</label>
+                        <input type="password" name="new_password" class="form-control" placeholder="أدخل كلمة مرور جديدة قوية...">
+                    </div>
+
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-gold px-4 fw-bold">
+                            <i class="fa-solid fa-check me-1"></i> حفظ التعديلات
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

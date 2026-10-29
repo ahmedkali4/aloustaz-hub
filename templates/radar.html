@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+
+{% block title %}رادار التراخيص الحية والتحكم عن بُعد | الأستاذ{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4 py-4">
+
+    <!-- Top Executive Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 pb-3 border-bottom">
+        <div>
+            <h3 class="fw-bold text-navy mb-1 d-flex align-items-center gap-2">
+                <i class="fa-solid fa-satellite-dish text-danger animate__animated animate__pulse animate__infinite"></i>
+                <span>رادار التراخيص الحية والتحكم عن بُعد</span>
+                <span class="badge bg-danger fs-6 px-2 py-1">LIVE TELEMETRY</span>
+            </h3>
+            <p class="text-muted small mb-0">مراقبة الأجهزة والنسخ الميدانية، كشف محاولات القرصنة والتلاعب، وإصدار أوامر القفل والترقية المباشرة.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-primary btn-sm d-flex align-items-center gap-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#broadcastAllModal">
+                <i class="fa-solid fa-bullhorn"></i>
+                <span>نشر إعلان لجميع الأجهزة</span>
+            </button>
+            <a href="{{ url_for('radar_dashboard') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-sm">
+                <i class="fa-solid fa-rotate-right"></i>
+                <span>تحديث الرادار</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Alert Banner for Tamper Alerts if Any -->
+    {% if tamper_alerts > 0 %}
+    <div class="alert alert-danger border-2 shadow-sm d-flex align-items-center justify-content-between mb-4 py-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="fs-2 text-danger">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <h5 class="fw-bold mb-1">يوجد {{ tamper_alerts }} جهاز مشبوه أو صادر بحقه إنذار تلاعب وقرصنة!</h5>
+                <p class="mb-0 small text-danger-emphasis">تم رصد محاولات كسر ترخيص أو تقديم/تأخير في ساعة النظام. راجع الأجهزة المحددة بالأحمر أدناه فوراً.</p>
+            </div>
+        </div>
+        <a href="{{ url_for('radar_dashboard', filter='tamper') }}" class="btn btn-danger btn-sm px-3 fw-bold">
+            عرض الأجهزة المشبوهة فقط
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- Stat Cards Metric Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-4 col-xl-2">
+            <a href="{{ url_for('radar_dashboard', filter='all') }}" class="card card-stat bg-white p-3 border h-100 {% if filter_type == 'all' %}border-primary border-2 shadow{% endif %}">
+                <div class="text-muted small fw-bold mb-1">إجمالي الأجهزة</div>
+                <div class="fs-4 fw-bold text-navy">{{ total_devices }}</div>
+                <div class="small text-muted mt-1"><i class="fa-solid fa-laptop me-1"></i> مسجلة بالبيكون</div>
+            </a>
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+            <a href="{{ url_for('radar_dashboard', filter='trials') }}" class="card card-stat bg-white p-3 border h-100 {% if filter_type == 'trials' %}border-info border-2 shadow{% endif %}">
+                <div class="text-info small fw-bold mb-1">ديمو تجريبي سارٍ</div>
+                <div class="fs-4 fw-bold text-info">{{ active_trials }}</div>
+                <div class="small text-muted mt-1"><i class="fa-solid fa-stopwatch me-1"></i> تحت التجربة (7 أيام)</div>
+            </a>
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+            <a href="{{ url_for('radar_dashboard', filter='paid') }}" class="card card-stat bg-white p-3 border h-100 {% if filter_type == 'paid' %}border-success border-2 shadow{% endif %}">
+                <div class="text-success small fw-bold mb-1">تراخيص مدفوعة</div>
+                <div class="fs-4 fw-bold text-success">{{ paid_active }}</div>
+                <div class="small text-muted mt-1"><i class="fa-solid fa-crown me-1"></i> باقات رسمية نشطة</div>
+            </a>
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+            <a href="{{ url_for('radar_dashboard', filter='tamper') }}" class="card card-stat bg-white p-3 border h-100 {% if filter_type == 'tamper' %}border-danger border-2 shadow{% endif %}">
+                <div class="text-danger small fw-bold mb-1">إنذارات تلاعب</div>
+                <div class="fs-4 fw-bold text-danger">{{ tamper_alerts }}</div>
+                <div class="small text-muted mt-1"><i class="fa-solid fa-bug text-danger me-1"></i> كراك / تعارض باقات</div>
+            </a>
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+            <a href="{{ url_for('radar_dashboard', filter='read_only') }}" class="card card-stat bg-white p-3 border h-100 {% if filter_type == 'read_only' %}border-warning border-2 shadow{% endif %}">
+                <div class="text-warning-emphasis small fw-bold mb-1">قراءة فقط (أقساط)</div>
+                <div class="fs-4 fw-bold text-warning-emphasis">{{ read_only_count }}</div>
+                <div class="small text-muted mt-1"><i class="fa-solid fa-file-invoice-dollar me-1"></i> تعثر مؤقت</div>
+            </a>
+        </div>
+        <div class="col-6 col-md-4 col-xl-2">
+            <a href="{{ url_for('radar_dashboard', filter='locked') }}" class="card card-stat bg-white p-3 border h-100 {% if filter_type == 'locked' %}border-dark border-2 shadow{% endif %}">
+                <div class="text-dark small fw-bold mb-1">أجهزة مقفولة</div>
+                <div class="fs-4 fw-bold text-dark">{{ devices|selectattr('status', 'in', ['LOCKED', 'REVOKED'])|list|length }}</div>
+                <div class="small text-muted mt-1"><i class="fa-solid fa-lock text-dark me-1"></i> معطلة عن بُعد</div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Pills & Search Bar -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-3">
+            <div class="row g-2 align-items-center">
+                <div class="col-12 col-md-7 d-flex flex-wrap gap-2">
+                    <a href="{{ url_for('radar_dashboard', filter='all') }}" class="btn btn-sm {% if filter_type == 'all' %}btn-dark{% else %}btn-outline-secondary{% endif %}">الكل ({{ total_devices }})</a>
+                    <a href="{{ url_for('radar_dashboard', filter='trials') }}" class="btn btn-sm {% if filter_type == 'trials' %}btn-info text-white{% else %}btn-outline-info{% endif %}">ديمو ({{ active_trials }})</a>
+                    <a href="{{ url_for('radar_dashboard', filter='paid') }}" class="btn btn-sm {% if filter_type == 'paid' %}btn-success{% else %}btn-outline-success{% endif %}">تراخيص مدفوعة ({{ paid_active }})</a>
+                    <a href="{{ url_for('radar_dashboard', filter='tamper') }}" class="btn btn-sm {% if filter_type == 'tamper' %}btn-danger{% else %}btn-outline-danger{% endif %}">إنذار تلاعب ({{ tamper_alerts }})</a>
+                    <a href="{{ url_for('radar_dashboard', filter='read_only') }}" class="btn btn-sm {% if filter_type == 'read_only' %}btn-warning text-dark{% else %}btn-outline-warning text-dark{% endif %}">قراءة فقط ({{ read_only_count }})</a>
+                    <a href="{{ url_for('radar_dashboard', filter='locked') }}" class="btn btn-sm {% if filter_type == 'locked' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">مقفولة</a>
+                </div>
+                <div class="col-12 col-md-5">
+                    <form method="GET" action="{{ url_for('radar_dashboard') }}" class="d-flex gap-2">
+                        <input type="hidden" name="filter" value="{{ filter_type }}">
+                        <input type="text" name="q" value="{{ search_q }}" class="form-control form-control-sm" placeholder="ابحث باسم المكتب، كود الجهاز، أو التليفون...">
+                        <button type="submit" class="btn btn-primary btn-sm px-3"><i class="fa-solid fa-search"></i></button>
+                        {% if search_q %}
+                        <a href="{{ url_for('radar_dashboard', filter=filter_type) }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-times"></i></a>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monitored Devices Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+            <span class="fw-bold text-navy fs-6"><i class="fa-solid fa-list-check text-primary me-2"></i> كشف الأجهزة والنسخ الميدانية المتصلة</span>
+            <span class="badge bg-secondary">{{ devices|length }} أجهزة معروضة</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 text-center">
+                <thead class="table-light text-muted small">
+                    <tr>
+                        <th class="text-end pe-3">المكتب / المحامي</th>
+                        <th>كود الجهاز (Machine ID)</th>
+                        <th>الباقة المرخصة</th>
+                        <th>الباقة الفعلية</th>
+                        <th>النشاط الفعلي</th>
+                        <th>الصلاحية / المتبقي</th>
+                        <th>حالة الأمان</th>
+                        <th>آخر اتصال (Ping)</th>
+                        <th>التحكم والإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in devices %}
+                    <tr class="{% if d.tamper_flags and d.tamper_flags != 'NONE' %}table-danger{% elif d.status in ['LOCKED', 'REVOKED'] %}table-secondary{% elif d.is_read_only %}table-warning{% endif %}">
+                        <!-- Firm & Lawyer -->
+                        <td class="text-end pe-3">
+                            <div class="fw-bold text-navy">{{ d.firm_name }}</div>
+                            <div class="small text-muted">
+                                {% if d.contact_phone %}
+                                <a href="tel:{{ d.contact_phone }}" class="text-decoration-none text-muted"><i class="fa-solid fa-phone me-1"></i>{{ d.contact_phone }}</a>
+                                {% else %}
+                                <span>غير مسجل هاتف</span>
+                                {% endif %}
+                                {% if d.client_id %}
+                                <a href="{{ url_for('client_detail', id=d.client_id) }}" class="badge bg-light text-primary border ms-1">سجل العميل ↗</a>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <!-- Machine ID -->
+                        <td>
+                            <code class="dir-ltr text-dark fw-bold px-2 py-1 bg-light rounded border border-secondary border-opacity-25">{{ d.machine_id }}</code>
+                        </td>
+
+                        <!-- Current Tier -->
+                        <td>
+                            {% if d.current_tier == 'FULL' %}
+                            <span class="badge bg-warning text-dark px-2 py-1"><i class="fa-solid fa-crown me-1"></i> Pro / Full</span>
+                            {% elif d.current_tier == 'STARTER' %}
+                            <span class="badge bg-success text-white px-2 py-1"><i class="fa-solid fa-rocket me-1"></i> Starter</span>
+                            {% elif d.current_tier == 'LITE' %}
+                            <span class="badge bg-info text-dark px-2 py-1"><i class="fa-solid fa-feather me-1"></i> Lite</span>
+                            {% else %}
+                            <span class="badge bg-danger text-white px-2 py-1"><i class="fa-solid fa-stopwatch me-1"></i> ديمو</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Reported Tier (Audit) -->
+                        <td>
+                            {% if d.reported_tier == 'FULL' and d.current_tier != 'FULL' %}
+                            <span class="badge bg-danger text-white px-2 py-1 animate__animated animate__flash">
+                                <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ d.reported_tier }} (مخالف!)
+                            </span>
+                            {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary px-2 py-1">
+                                {{ d.reported_tier or 'غير محدد' }}
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Actual Cases & Hearings Activity -->
+                        <td>
+                            <div class="fw-bold">{{ d.cases_count|default(0) }} <span class="small text-muted">قضية</span></div>
+                            <div class="small text-muted">{{ d.hearings_count|default(0) }} جلسة</div>
+                        </td>
+
+                        <!-- Days Remaining / Status -->
+                        <td>
+                            {% if d.current_tier == 'TRIAL' %}
+                                {% if d.status == 'EXPIRED' or d.days_remaining <= 0 %}
+                                <span class="badge bg-secondary text-white">منتهي</span>
+                                {% else %}
+                                <span class="badge bg-info text-white fw-bold">{{ d.days_remaining }} أيام متبقية</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-success small fw-bold"><i class="fa-solid fa-infinity me-1"></i> نشط دائم</span>
+                            {% endif %}
+                            {% if d.is_read_only %}
+                            <div class="mt-1"><span class="badge bg-warning text-dark">وضع قراءة فقط</span></div>
+                            {% endif %}
+                        </td>
+
+                        <!-- Security & Tamper Flags -->
+                        <td>
+                            {% if d.tamper_flags == 'TIER_MISMATCH' %}
+                            <span class="badge bg-danger text-white px-2 py-1" title="محاولة تشغيل باقة فول بدون ترخيص">
+                                <i class="fa-solid fa-skull-crossbones me-1"></i> كراك / تلاعب باقة
+                            </span>
+                            {% elif d.tamper_flags == 'CLOCK_ROLLBACK' %}
+                            <span class="badge bg-danger text-white px-2 py-1" title="تم رصد تلاعب بساعة الجهاز وتأخير التاريخ">
+                                <i class="fa-solid fa-clock-rotate-left me-1"></i> تلاعب بالساعة
+                            </span>
+                            {% elif d.tamper_flags == 'CRACK_ATTEMPT' %}
+                            <span class="badge bg-danger text-white px-2 py-1">
+                                <i class="fa-solid fa-bug me-1"></i> محاولة تعديل ملفات
+                            </span>
+                            {% elif d.status in ['LOCKED', 'REVOKED'] %}
+                            <span class="badge bg-dark text-white px-2 py-1">
+                                <i class="fa-solid fa-lock me-1"></i> مقفول مركزياً
+                            </span>
+                            {% else %}
+                            <span class="badge bg-success-subtle text-success px-2 py-1">
+                                <i class="fa-solid fa-shield-check me-1"></i> سليم ومتطابق
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Last Heartbeat & IP -->
+                        <td>
+                            <div class="small fw-bold">{{ d.last_heartbeat or 'لم يتصل بعد' }}</div>
+                            <div class="small text-muted dir-ltr"><i class="fa-solid fa-globe me-1"></i>{{ d.last_ip or '-' }}</div>
+                        </td>
+
+                        <!-- Action Buttons -->
+                        <td>
+                            <div class="dropdown">
+                                <button class="btn btn-outline-dark btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    تحكم
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow text-end">
+                                    <li><a class="dropdown-item" href="{{ url_for('radar_device_detail', id=d.id) }}"><i class="fa-solid fa-eye me-2 text-primary"></i> عرض السجل والتفاصيل</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+
+                                    {% if d.status in ['LOCKED', 'REVOKED'] %}
+                                    <li>
+                                        <form method="POST" action="{{ url_for('radar_device_action', id=d.id) }}">
+                                            <input type="hidden" name="action_type" value="unlock">
+                                            <button type="submit" class="dropdown-item text-success"><i class="fa-solid fa-lock-open me-2"></i> فك الحظر والتفعيل</button>
+                                        </form>
+                                    </li>
+                                    {% else %}
+                                    <li>
+                                        <form method="POST" action="{{ url_for('radar_device_action', id=d.id) }}" onsubmit="return confirm('هل أنت متأكد من قفل هذا البرنامج عن بُعد فوراً؟');">
+                                            <input type="hidden" name="action_type" value="lock">
+                                            <button type="submit" class="dropdown-item text-danger"><i class="fa-solid fa-lock me-2"></i> قفل النسخة عن بُعد</button>
+                                        </form>
+                                    </li>
+                                    {% endif %}
+
+                                    {% if d.current_tier == 'TRIAL' %}
+                                    <li>
+                                        <form method="POST" action="{{ url_for('radar_device_action', id=d.id) }}">
+                                            <input type="hidden" name="action_type" value="extend_days">
+                                            <input type="hidden" name="param_val" value="3">
+                                            <button type="submit" class="dropdown-item text-info"><i class="fa-solid fa-plus-circle me-2"></i> تمديد الديمو 3 أيام</button>
+                                        </form>
+                                    </li>
+                                    {% endif %}
+
+                                    {% if d.is_read_only %}
+                                    <li>
+                                        <form method="POST" action="{{ url_for('radar_device_action', id=d.id) }}">
+                                            <input type="hidden" name="action_type" value="disable_read_only">
+                                            <button type="submit" class="dropdown-item text-success fw-bold">
+                                                <i class="fa-solid fa-lock-open me-2"></i> إلغاء وضع القراءة فقط (استعادة الإدخال)
+                                            </button>
+                                        </form>
+                                    </li>
+                                    {% else %}
+                                    <li>
+                                        <form method="POST" action="{{ url_for('radar_device_action', id=d.id) }}">
+                                            <input type="hidden" name="action_type" value="enable_read_only">
+                                            <button type="submit" class="dropdown-item text-warning fw-bold">
+                                                <i class="fa-solid fa-file-invoice-dollar me-2"></i> تفعيل وضع القراءة فقط (تجميد الإدخال)
+                                            </button>
+                                        </form>
+                                    </li>
+                                    {% endif %}
+
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a href="{{ url_for('generate_license', machine_id=d.machine_id, client_name=d.firm_name) }}" class="dropdown-item text-primary">
+                                            <i class="fa-solid fa-key me-2"></i> إصدار ترخيص رسمي لهذا الجهاز
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="py-5 text-center text-muted">
+                            <i class="fa-solid fa-satellite-dish fs-1 text-secondary mb-3 d-block opacity-50"></i>
+                            <h5>لا توجد أجهزة مطابقة لخيارات البحث الحالية في الرادار</h5>
+                            <p class="small">بمجرد تثبيت أو تشغيل نسخة الأستاذ v2.0 في أي مكتب مع وجود إنترنت، ستظهر هنا تلقائياً في ثوانٍ.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Modal: Broadcast Announcement to All Devices -->
+<div class="modal fade" id="broadcastAllModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="POST" action="{{ url_for('radar_broadcast_all') }}" class="modal-content">
+            <div class="modal-header bg-navy text-white">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-bullhorn text-warning me-2"></i> نشر رسالة إعلانية لجميع الأجهزة</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">الفئة المستهدفة:</label>
+                    <select name="target_tier" class="form-select">
+                        <option value="ALL">جميع الأجهزة المتصلة بلا استثناء</option>
+                        <option value="TRIAL">عملاء الديمو التجريبي فقط (للترويج والخصومات)</option>
+                        <option value="STARTER">عملاء باقة الانطلاق (Starter)</option>
+                        <option value="FULL">عملاء باقة المحترف (Pro/Full)</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">نص الإعلان أو التنبيه:</label>
+                    <textarea name="broadcast_msg" rows="4" class="form-control" placeholder="اكتب الرسالة التي ستظهر في شريط علوي داخل برنامج العميل..." required></textarea>
+                    <div class="form-text">ستظهر هذه الرسالة في الهيدر العلوي لبرنامج الأستاذ عند فتح البرنامج أو أثناء المزامنة.</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="submit" class="btn btn-primary fw-bold">إرسال وبث الرسالة فوراً</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

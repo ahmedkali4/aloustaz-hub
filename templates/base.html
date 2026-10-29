@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}لوحة إدارة المبيعات والتراخيص{% endblock %} - منظومة الأستاذ</title>
+    <!-- Bootstrap 5 RTL -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css">
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Cairo Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Mobile Web App Manifest Meta -->
+    <meta name="theme-color" content="#152238">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <style>
+        :root {
+            --primary-navy: #152238;
+            --primary-gold: #c5a059;
+            --gold-hover: #b08d48;
+            --dark-bg: #0d1726;
+        }
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f4f6f9;
+            color: #212529;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .navbar-vendor {
+            background-color: var(--primary-navy);
+            border-bottom: 3px solid var(--primary-gold);
+        }
+        .btn-gold {
+            background-color: var(--primary-gold);
+            color: var(--primary-navy);
+            font-weight: 700;
+            border: none;
+            transition: all 0.2s ease;
+        }
+        .btn-gold:hover {
+            background-color: var(--gold-hover);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+        .card-stat {
+            border: none;
+            border-radius: 12px;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        .card-stat:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+        }
+        .badge-edition-full {
+            background-color: #ffc107;
+            color: #212529;
+            font-weight: bold;
+        }
+        .badge-edition-starter {
+            background-color: #198754;
+            color: #ffffff;
+            font-weight: bold;
+        }
+        .badge-edition-lite {
+            background-color: #0dcaf0;
+            color: #212529;
+            font-weight: bold;
+        }
+        .dir-ltr { direction: ltr; display: inline-block; }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-vendor py-2 sticky-top shadow-sm">
+        <div class="container-fluid px-lg-4">
+            <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="{{ url_for('dashboard') }}">
+                <i class="fa-solid fa-gem text-warning fs-4"></i>
+                <span class="fs-5">الأستاذ • لوحة إدارة المبيعات والتراخيص</span>
+            </a>
+
+            {% if current_admin %}
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#vendorNavbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="vendorNavbar">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-1">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'dashboard' %}active fw-bold text-warning{% endif %}" href="{{ url_for('dashboard') }}">
+                            <i class="fa-solid fa-chart-line me-1"></i> لوحة المؤشرات
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'generate_license' %}active fw-bold text-warning{% endif %}" href="{{ url_for('generate_license') }}">
+                            <i class="fa-solid fa-key me-1"></i> توليد ترخيص جديد 🔑
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint in ['clients_list', 'client_detail'] %}active fw-bold text-warning{% endif %}" href="{{ url_for('clients_list') }}">
+                            <i class="fa-solid fa-building-columns me-1"></i> سجل المكاتب والعملاء
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'leads_list' %}active fw-bold text-warning{% endif %}" href="{{ url_for('leads_list') }}">
+                            <i class="fa-solid fa-users-viewfinder me-1"></i> متابعة العملاء (Leads)
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint in ['reps_list', 'rep_detail'] %}active fw-bold text-warning{% endif %}" href="{{ url_for('reps_list') }}">
+                            <i class="fa-solid fa-user-tie me-1"></i> مناديب المبيعات 🤝
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link position-relative {% if request.endpoint in ['radar_dashboard', 'radar_device_detail'] %}active fw-bold text-warning{% endif %}" href="{{ url_for('radar_dashboard') }}">
+                            <i class="fa-solid fa-satellite-dish me-1 text-danger"></i> رادار الأجهزة 📡
+                            {% if tamper_alerts_count|default(0) > 0 %}
+                            <span class="badge bg-danger rounded-pill ms-1">{{ tamper_alerts_count }}</span>
+                            {% endif %}
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{{ url_for('mobile_qr_view') }}" class="btn btn-outline-light btn-sm d-flex align-items-center gap-1 shadow-sm px-2">
+                        <i class="fa-solid fa-qrcode text-warning"></i> <span>كود الموبايل</span>
+                    </a>
+                    <a href="{{ url_for('generate_license') }}" class="btn btn-gold btn-sm d-flex align-items-center gap-1 shadow-sm px-3">
+                        <i class="fa-solid fa-plus-circle"></i> إصدار ترخيص
+                    </a>
+
+                    <div class="dropdown">
+                        <button class="btn btn-outline-light btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+                            <i class="fa-solid fa-circle-user text-warning"></i>
+                            <span>{{ current_admin.full_name }}</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end text-end shadow">
+                            <li><span class="dropdown-item-text text-muted small"><i class="fa-solid fa-phone me-1"></i> {{ current_admin.phone }}</span></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('settings_page') }}"><i class="fa-solid fa-gear me-2 text-primary"></i> الإعدادات وتغيير المرور</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('export_clients') }}"><i class="fa-solid fa-file-excel me-2 text-success"></i> تصدير البيانات (Excel)</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('download_db_backup') }}"><i class="fa-solid fa-database me-2 text-info"></i> تحميل نسخة احتياطية (Backup)</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger fw-bold" href="{{ url_for('logout') }}"><i class="fa-solid fa-arrow-right-from-bracket me-2"></i> تسجيل الخروج</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <main class="container-fluid px-lg-4 py-4 flex-grow-1" style="max-width: 1400px;">
+        <!-- Flashed Alerts -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+                        <i class="fa-solid fa-circle-info me-2"></i> {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-top py-3 text-center text-muted small mt-auto">
+        <div class="container">
+            <span>منظومة «الأستاذ» لإدارة المبيعات والتراخيص &copy; {{ now_year }} &bull; المالك والمطور: <strong>Ahmed Mabrouk</strong> &bull; هاتف: <span class="dir-ltr">+201550597688</span></span>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

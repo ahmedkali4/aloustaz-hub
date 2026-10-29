@@ -1,0 +1,649 @@
+{% extends "base.html" %}
+{% block title %}توليد ترخيص جديد{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-10">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h4 class="fw-bold mb-1"><i class="fa-solid fa-key text-warning me-2"></i> شاشة توليد التراخيص المشفرة</h4>
+                <p class="text-muted small mb-0">إصدار التراخيص الرقمية بضغطة زر مع ضبط الباقة ومدة السريان ونظام الدفع</p>
+            </div>
+            <a href="{{ url_for('clients_list') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="fa-solid fa-arrow-right me-1"></i> العودة لسجل العملاء
+            </a>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-3 overflow-hidden bg-white mb-4">
+            <div class="card-header bg-white py-3 border-bottom border-2 border-warning">
+                <span class="fw-bold fs-6 text-dark">
+                    <i class="fa-solid fa-file-signature text-warning me-2"></i> بيانات الترخيص والمكتب
+                </span>
+            </div>
+
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('generate_license') }}">
+                    <!-- Row 1: Client Info -->
+                    <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-building-user me-2"></i> أولاً: بيانات العميل والمكتب</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small text-muted">اسم المستشار / المحامي الرئيسي: <span class="text-danger">*</span></label>
+                            <input type="text" name="client_name" class="form-control" required placeholder="أ.د / أحمد عبد الله" value="{{ pre_client.full_name if pre_client else '' }}">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small text-muted">اسم المكتب أو الشركة القانونية:</label>
+                            <input type="text" name="firm_name" class="form-control" placeholder="مكتب النخبة للمحاماة والاستشارات" value="{{ pre_client.firm_name if pre_client else '' }}">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-bold small text-muted">رقم الهاتف / الواتساب: <span class="text-danger">*</span></label>
+                            <input type="text" name="phone" class="form-control" required placeholder="+2010..." value="{{ pre_client.phone if pre_client else '' }}">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-bold small text-muted">المحافظة / المدينة:</label>
+                            <input type="text" name="city" class="form-control" placeholder="القاهرة / الإسكندرية / الجيزة" value="{{ pre_client.city if pre_client else '' }}">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-bold small text-muted">البريد الإلكتروني (اختياري):</label>
+                            <input type="email" name="email" class="form-control" placeholder="lawyer@example.com" value="{{ pre_client.email if pre_client else '' }}">
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Target Hardware ID -->
+                    <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-fingerprint me-2"></i> ثانياً: كود عتاد جهاز العميل (Machine ID)</h6>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-muted">كود الجهاز المستهدف: <span class="text-danger">*</span> (المنسوخ من شاشة تفعيل برنامج العميل)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-laptop"></i></span>
+                            <input type="text" name="machine_id" id="machineInput" class="form-control font-monospace text-uppercase fw-bold" required placeholder="LAW-XXXX-XXXX-XXXX" value="{{ pre_client.machine_id if pre_client else '' }}">
+                            <button class="btn btn-outline-secondary" type="button" onclick="pasteMachineId()"><i class="fa-solid fa-paste me-1"></i> لصق</button>
+                        </div>
+                        <div class="form-text small">يتكون من كود مشفر يبدأ بـ LAW، مثل: <code>LAW-A1B2-C3D4-E5F6</code></div>
+                    </div>
+
+                    <!-- Row 3: Preset Smart Pricing Packages -->
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="fw-bold text-primary mb-0"><i class="fa-solid fa-wand-magic-sparkles me-2"></i> ثالثاً: اختر باقة التسعير المعتمدة (حساب آلي بنقرة واحدة)</h6>
+                        <span class="badge bg-gold text-dark fw-bold">حساب فوري وتلقائي</span>
+                    </div>
+                    <p class="text-muted small mb-3">اختر الباقة المناسبة ليتم ضبط نوع النسخة، مدة الترخيص، ونظام الأقساط وجدول السداد آلياً:</p>
+
+                    <!-- Presets Grid -->
+                    <div class="row g-2 mb-4" id="presetsContainer">
+                        <!-- Preset 1: Starter Lifetime Cash -->
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <div class="card h-100 p-2 border preset-card cursor-pointer" onclick="applyPreset('STARTER_CASH', this)" style="cursor: pointer; border-radius: 10px;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="badge bg-success">الانطلاق 🚀</span>
+                                    <strong class="text-success fs-6">1,500 ج.م</strong>
+                                </div>
+                                <div class="fw-bold small text-dark">كاش دائم (20 قضية)</div>
+                                <div class="text-muted" style="font-size: 11px;">دائم مدى الحياة • مسدد بالكامل</div>
+                            </div>
+                        </div>
+
+                        <!-- Preset 2: Starter Promo -->
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <div class="card h-100 p-2 border preset-card cursor-pointer" onclick="applyPreset('STARTER_PROMO', this)" style="cursor: pointer; border-radius: 10px;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="badge bg-danger">عرض ترويجي 🔥</span>
+                                    <strong class="text-danger fs-6">1,200 ج.م</strong>
+                                </div>
+                                <div class="fw-bold small text-dark">الانطلاق (عرض خاص)</div>
+                                <div class="text-muted" style="font-size: 11px;">للأوائل وشباب المحامين</div>
+                            </div>
+                        </div>
+
+                        <!-- Preset 3: Full Lifetime Launch Cash -->
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <div class="card h-100 p-2 border preset-card cursor-pointer border-warning bg-warning bg-opacity-10" onclick="applyPreset('FULL_CASH_LAUNCH', this)" style="cursor: pointer; border-radius: 10px;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="badge bg-warning text-dark">الكاملة Pro 👑</span>
+                                    <strong class="text-dark fs-6">8,900 ج.م</strong>
+                                </div>
+                                <div class="fw-bold small text-dark">كاش (عرض الإطلاق)</div>
+                                <div class="text-muted" style="font-size: 11px;">دائم مدى الحياة • غير محدود</div>
+                            </div>
+                        </div>
+
+                        <!-- Preset 4: Full Lifetime Standard Cash -->
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <div class="card h-100 p-2 border preset-card cursor-pointer" onclick="applyPreset('FULL_CASH_STANDARD', this)" style="cursor: pointer; border-radius: 10px;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="badge bg-dark">الكاملة Pro 👑</span>
+                                    <strong class="text-dark fs-6">12,000 ج.م</strong>
+                                </div>
+                                <div class="fw-bold small text-dark">كاش (السعر الرسمي)</div>
+                                <div class="text-muted" style="font-size: 11px;">دائم مدى الحياة للمكاتب الكبرى</div>
+                            </div>
+                        </div>
+
+                        <!-- Preset 5: Full Quarterly Installment -->
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <div class="card h-100 p-2 border preset-card cursor-pointer border-primary" onclick="applyPreset('FULL_INSTALLMENT_QUARTERLY', this)" style="cursor: pointer; border-radius: 10px;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="badge bg-primary">تقسيط ربع سنوي 💳</span>
+                                    <strong class="text-primary fs-6">10,500 ج.م</strong>
+                                </div>
+                                <div class="fw-bold small text-dark">مقدم 3,000 + 3 × 2,500</div>
+                                <div class="text-muted" style="font-size: 11px;">تفعيل 90 يوم يتجدد مع كل قسط</div>
+                            </div>
+                        </div>
+
+                        <!-- Preset 6: Full Monthly Installment -->
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <div class="card h-100 p-2 border preset-card cursor-pointer border-info" onclick="applyPreset('FULL_INSTALLMENT_MONTHLY', this)" style="cursor: pointer; border-radius: 10px;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="badge bg-info text-dark">تقسيط شهري 📅</span>
+                                    <strong class="text-dark fs-6">10,000 ج.م</strong>
+                                </div>
+                                <div class="fw-bold small text-dark">1,000 ج.م شهرياً × 10</div>
+                                <div class="text-muted" style="font-size: 11px;">تفعيل شهري يتجدد بالسداد</div>
+                            </div>
+                        </div>
+
+                        <!-- Preset 7: Lite Annual Subscription -->
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <div class="card h-100 p-2 border preset-card cursor-pointer" onclick="applyPreset('LITE_ANNUAL', this)" style="cursor: pointer; border-radius: 10px;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="badge bg-secondary">المخففة Lite 🪶</span>
+                                    <strong class="text-dark fs-6">3,500 ج.م</strong>
+                                </div>
+                                <div class="fw-bold small text-dark">اشتراك سنوي (سنة كاملة)</div>
+                                <div class="text-muted" style="font-size: 11px;">100 قضية • سداد سنوي</div>
+                            </div>
+                        </div>
+
+                        <!-- Preset 8: Demo Free -->
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <div class="card h-100 p-2 border preset-card cursor-pointer" onclick="applyPreset('DEMO_FREE', this)" style="cursor: pointer; border-radius: 10px;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="badge bg-light text-dark border">تجريبية مجانية 🎁</span>
+                                    <strong class="text-muted fs-6">0.00 ج.م</strong>
+                                </div>
+                                <div class="fw-bold small text-dark">ترايال 7 أيام كاملة</div>
+                                <div class="text-muted" style="font-size: 11px;">للتجربة قبل الشراء بدون مقابل</div>
+                            </div>
+                        </div>
+
+                        <!-- Preset 9: Complimentary PR Gift -->
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <div class="card h-100 p-2 border preset-card cursor-pointer border-secondary" onclick="applyPreset('COMPLIMENTARY_GIFT', this)" style="cursor: pointer; border-radius: 10px;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="badge bg-secondary text-white">إهداء ومجاملة 🎁</span>
+                                    <strong class="text-secondary fs-6">0.00 ج.م</strong>
+                                </div>
+                                <div class="fw-bold small text-dark">نسخة مجاملة (دعاية وانتشار)</div>
+                                <div class="text-muted" style="font-size: 11px;">قيمة تقديرية 8,900 ج.م كاستثمار PR</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hidden pricing preset tracker -->
+                    <input type="hidden" name="pricing_plan_key" id="pricingPlanKey" value="FULL_CASH_LAUNCH">
+
+                    <!-- Row 4: Edition Selection -->
+                    <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-layer-group me-2"></i> رابعاً: نوع الباقة والنسخة المحددة</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-4">
+                            <label class="card p-3 border-2 h-100 cursor-pointer text-center" id="cardEditionFull" style="cursor: pointer;">
+                                <input type="radio" name="license_type" id="radioEditionFull" value="FULL" class="form-check-input mb-2 mx-auto" checked onchange="toggleEditionHelp('FULL')">
+                                <span class="fw-bold text-dark fs-6 d-block">👑 النسخة الكاملة (Pro)</span>
+                                <span class="badge bg-warning text-dark my-1">شاملة غير محدودة</span>
+                                <p class="text-muted small mb-0 mt-1">قضايا وموظفين غير محدود مدى الحياة بكامل الميزات.</p>
+                            </label>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="card p-3 border-2 h-100 cursor-pointer text-center" id="cardEditionStarter" style="cursor: pointer;">
+                                <input type="radio" name="license_type" id="radioEditionStarter" value="STARTER" class="form-check-input mb-2 mx-auto" onchange="toggleEditionHelp('STARTER')">
+                                <span class="fw-bold text-dark fs-6 d-block">🚀 باقة الانطلاق (Starter)</span>
+                                <span class="badge bg-success my-1">محدودة بـ 20 قضية</span>
+                                <p class="text-muted small mb-0 mt-1">20 قضية + طاقم مكتب متكامل (صاحب المكتب + 2 محامين + محامٍ تحت التدريب + 2 إداريين).</p>
+                            </label>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="card p-3 border-2 h-100 cursor-pointer text-center" id="cardEditionLite" style="cursor: pointer;">
+                                <input type="radio" name="license_type" id="radioEditionLite" value="LITE" class="form-check-input mb-2 mx-auto" onchange="toggleEditionHelp('LITE')">
+                                <span class="fw-bold text-dark fs-6 d-block">🪶 النسخة الاقتصادية (Lite)</span>
+                                <span class="badge bg-info text-dark my-1">100 قضية</span>
+                                <p class="text-muted small mb-0 mt-1">سقف 100 قضية مع حجب مسير الرواتب المتقدم.</p>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Row 5: Duration / Validity -->
+                    <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-hourglass-half me-2"></i> خامساً: مدة سريان الترخيص</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small text-muted">فترة الصلاحية:</label>
+                            <select name="duration_type" id="durationSelect" class="form-select fw-semibold" onchange="toggleCustomDays()">
+                                <option value="LIFETIME" selected>مدى الحياة دائم (Lifetime) - بدون انتهاء 👑</option>
+                                <option value="90_DAYS">90 يوماً (3 أشهر - نظام الأقساط ربع السنوية)</option>
+                                <option value="60_DAYS">60 يوماً (شهران)</option>
+                                <option value="30_DAYS">30 يوماً (شهر - قسط شهري أو اشتراك)</option>
+                                <option value="YEARLY">سنة كاملة (365 يوماً - اشتراك سنوي)</option>
+                                <option value="CUSTOM">فترة مخصصة محددة بالأيام</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6 d-none" id="customDaysCol">
+                            <label class="form-label fw-bold small text-muted">عدد الأيام المخصصة:</label>
+                            <input type="number" name="custom_days" id="customDaysInput" class="form-control" placeholder="مثلاً: 7 للترايال أو 45">
+                        </div>
+                    </div>
+
+                    <!-- Row 6: Payment Details -->
+                    <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-coins me-2"></i> سادساً: الحسابات المالية ونظام الأقساط</h6>
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-bold small text-muted">نظام الدفع:</label>
+                            <select name="payment_model" id="paymentModelSelect" class="form-select">
+                                <option value="كاش كامل">كاش كامل (مسدد بالكامل)</option>
+                                <option value="تقسيط ربع سنوي">تقسيط ربع سنوي (دفعات كل 3 أشهر)</option>
+                                <option value="تقسيط شهري">تقسيط شهري (دفعات شهرية)</option>
+                                <option value="اشتراك سنوي">اشتراك سنوي</option>
+                                <option value="اشتراك ربع سنوي">اشتراك ربع سنوي</option>
+                                <option value="اشتراك شهري">اشتراك شهري</option>
+                                <option value="نسخة تجريبية مجانية">نسخة تجريبية مجانية (Demo)</option>
+                                <option value="نسخة مجانية / هدية">نسخة مجانية / إهداء ومجاملة (Gift / PR)</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-bold small text-muted">طريقة التحصيل الحالية:</label>
+                            <select name="payment_method" class="form-select">
+                                <option value="إنستاباي (InstaPay)">إنستاباي (InstaPay)</option>
+                                <option value="فودافون كاش (Vodafone Cash)">فودافون كاش (Vodafone Cash)</option>
+                                <option value="تحويل بنكي">تحويل بنكي</option>
+                                <option value="نقداً (كاش)">نقداً (كاش)</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-bold small text-muted">إجمالي السعر المتفق عليه (ج.م):</label>
+                            <input type="number" step="10" name="total_price" id="totalPrice" class="form-control fw-bold" placeholder="مثلاً: 8900" oninput="calcRemaining()">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-bold small text-muted">المبلغ المسدد الآن (ج.م):</label>
+                            <input type="number" step="10" name="paid_amount" id="paidAmount" class="form-control text-success fw-bold" placeholder="مثلاً: 8900" oninput="calcRemaining()">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-bold small text-muted">المبلغ المتبقي (أقساط مؤجلة):</label>
+                            <input type="text" id="remainingAmount" class="form-control bg-light fw-bold text-danger" readonly placeholder="0.00 ج.م">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-bold small text-muted">تاريخ استحقاق القسط القادم:</label>
+                            <input type="date" name="next_payment_date" id="nextPaymentDate" class="form-control">
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Installment Preview Box -->
+                    <div id="installmentPreviewBox" class="alert alert-info border-2 border-primary mb-4 p-3 rounded-3 d-none">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="fw-bold text-primary"><i class="fa-solid fa-calendar-days me-1"></i> جدول سداد الأقساط المحسوب تلقائياً للمكتب:</span>
+                            <span class="badge bg-primary" id="previewPlanBadge">تقسيط ربع سنوي</span>
+                        </div>
+                        <div id="installmentScheduleList" class="small text-dark"></div>
+                    </div>
+
+                    <!-- Row 7: Referral & Affiliate Program -->
+                    <div class="card bg-light border border-2 border-primary border-opacity-25 rounded-3 p-3 mb-4">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="fw-bold text-primary mb-0"><i class="fa-solid fa-handshake-angle me-2"></i> سابعاً: نظام الإحالة وترشيح الزملاء (Referral Program)</h6>
+                            <span class="badge bg-primary text-white">خصم 10% للمشتري + مكافأة للزميل</span>
+                        </div>
+                        <p class="text-muted small mb-3">إذا كان هذا العميل قادماً بترشيح من زميل / مستشار سابق، اختر المحيل ليتم تطبيق الخصم واحتساب المكافأة آلياً:</p>
+
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-bold small text-muted">تم الترشيح بواسطة المستشار / المكتب:</label>
+                                <select name="referred_by_id" id="referredBySelect" class="form-select" onchange="calcReferralDiscount()">
+                                    <option value="">-- انضمام مباشر (بدون ترشيح من زميل) --</option>
+                                    {% if all_clients %}
+                                        {% for ac in all_clients %}
+                                        <option value="{{ ac.id }}" data-remaining="{{ ac.remaining_amount }}" data-name="{{ ac.full_name }}">{{ ac.full_name }} ({{ ac.firm_name }}) - هاتف: {{ ac.phone }}</option>
+                                        {% endfor %}
+                                    {% endif %}
+                                </select>
+                            </div>
+
+                            <div class="col-12 col-md-3">
+                                <label class="form-label fw-bold small text-muted">قيمة خصم الإحالة للعميل الجديد (ج.م):</label>
+                                <input type="number" name="referral_discount" id="referralDiscountInput" class="form-control text-success fw-bold" value="0" readonly>
+                                <div class="form-text small">خصم 10% تشجيعي للمشتري الجديد</div>
+                            </div>
+
+                            <div class="col-12 col-md-3">
+                                <label class="form-label fw-bold small text-muted">مكافأة الترشيح للمستشار المحيل (ج.م):</label>
+                                <input type="number" name="referral_reward" id="referralRewardInput" class="form-control text-primary fw-bold" value="0" readonly>
+                                <div class="form-text small">500 ج.م (كاملة) / 150 ج.م (انطلاق)</div>
+                            </div>
+
+                            <div class="col-12 d-none" id="referralActionBox">
+                                <label class="form-label fw-bold small text-muted">طريقة تسوية مكافأة المستشار المحيل:</label>
+                                <div class="d-flex flex-wrap gap-4 p-2 bg-white rounded border">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="referral_action" id="actionDeduct" value="deduct_from_installment" checked>
+                                        <label class="form-check-label fw-bold text-dark small" for="actionDeduct">
+                                            <i class="fa-solid fa-calculator text-success me-1"></i> خصم المكافأة فورياً من الأقساط المتبقية على المستشار المحيل
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="referral_action" id="actionCash" value="cash_pending">
+                                        <label class="form-check-label fw-bold text-dark small" for="actionCash">
+                                            <i class="fa-solid fa-money-bill-wave text-primary me-1"></i> تسجيلها كمكافأة مستحقة للسداد كاش لاحقاً (إنستاباي / كاش)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 8: Complimentary & PR Gift Options -->
+                    <div class="card bg-light border border-2 border-secondary border-opacity-25 rounded-3 p-3 mb-4">
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" name="is_complimentary" id="isComplimentaryCheck" value="1" onchange="toggleComplimentaryBox()">
+                            <label class="form-check-label fw-bold text-dark" for="isComplimentaryCheck">
+                                <i class="fa-solid fa-gift text-secondary me-1"></i> هذه النسخة مهداة على سبيل المجاملة والدعاية والانتشار (Complimentary PR Gift)
+                            </label>
+                        </div>
+                        <div id="complimentaryBox" class="row g-3 mt-1 d-none">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-bold small text-muted">القيمة السوقية التقديرية (تسجل كمصروفات تسويق ودعاية):</label>
+                                <input type="number" name="complimentary_nominal_value" id="complimentaryNominalValue" class="form-control" value="8900" placeholder="مثلاً: 8900 ج.م">
+                                <div class="form-text small">لا تحتسب كسيولة في الخزينة، بل كاستثمار دعائي للمكتب</div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-bold small text-muted">مناسبة أو سبب الإهداء:</label>
+                                <input type="text" name="complimentary_reason" id="complimentaryReason" class="form-control" placeholder="مثلاً: مجاملة افتتاح مكتب المستشار فلان / شخصية نقابية مؤثرة">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 9: Field Sales Rep Assignment -->
+                    <div class="card bg-light border border-2 border-warning border-opacity-50 rounded-3 p-3 mb-4">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-user-tie text-warning me-2"></i> تاسعاً: المندوب / سفير المبيعات الميداني المسؤول عن البيعة</h6>
+                            <span class="badge bg-warning text-dark">عمولة: 1,500 ج.م للكاملة • 300 ج.م للانطلاق</span>
+                        </div>
+                        <p class="text-muted small mb-3">اختر المندوب (المحامي الشاب / المسوق الميداني) لاحتساب عمولته وإضافتها لرصيد أرباحه تلقائياً:</p>
+
+                        <div class="row g-3">
+                            <div class="col-12 col-md-7">
+                                <label class="form-label fw-bold small text-muted">اسم المندوب المسؤول:</label>
+                                <select name="sales_rep_id" id="salesRepSelect" class="form-select" onchange="calcRepCommission()">
+                                    <option value="">-- بيع مباشر (بدون مندوب مبيعات) --</option>
+                                    {% if active_reps %}
+                                        {% for rep in active_reps %}
+                                        <option value="{{ rep.id }}">{{ rep.name }} ({{ rep.rep_code }}) - {{ rep.court_coverage or rep.city or 'عام' }}</option>
+                                        {% endfor %}
+                                    {% endif %}
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-5">
+                                <label class="form-label fw-bold small text-muted">قيمة عمولة المندوب (ج.م):</label>
+                                <input type="number" step="50" name="rep_commission" id="repCommissionInput" class="form-control text-primary fw-bold" value="0">
+                                <div class="form-text small">تحسب آلياً بناءً على الباقة وتضاف لكشف حسابه</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-muted">ملاحظات داخلية خاصة بك:</label>
+                        <textarea name="notes" id="notesField" class="form-control" rows="2" placeholder="أي تفاصيل خاصة بالاتفاق أو العميل..."></textarea>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="text-center pt-2">
+                        <button type="submit" class="btn btn-gold btn-lg px-5 shadow-sm fw-bold">
+                            <i class="fa-solid fa-shield-check me-2"></i> توليد مفتاح الترخيص المشفر وتسجيل المعاملة المالية 🚀
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function pasteMachineId() {
+    navigator.clipboard.readText().then(text => {
+        document.getElementById('machineInput').value = text.trim();
+    }).catch(err => {
+        alert('تعذر الوصول للحافظة، يرجى لصق الكود يدوياً.');
+    });
+}
+
+function toggleCustomDays() {
+    var dur = document.getElementById('durationSelect').value;
+    var col = document.getElementById('customDaysCol');
+    if (dur === 'CUSTOM') {
+        col.classList.remove('d-none');
+    } else {
+        col.classList.add('d-none');
+    }
+}
+
+function calcRemaining() {
+    var total = parseFloat(document.getElementById('totalPrice').value) || 0;
+    var paid = parseFloat(document.getElementById('paidAmount').value) || 0;
+    var rem = Math.max(0, total - paid);
+    document.getElementById('remainingAmount').value = rem.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
+}
+
+function formatDate(dateObj) {
+    var year = dateObj.getFullYear();
+    var month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    var day = String(dateObj.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function addDays(dateObj, days) {
+    var result = new Date(dateObj);
+    result.setDate(result.getDate() + days);
+    return result;
+}
+
+// Preset smart calculator
+function applyPreset(key, cardEl) {
+    document.getElementById('pricingPlanKey').value = key;
+
+    // Highlight card
+    document.querySelectorAll('.preset-card').forEach(c => {
+        c.classList.remove('border-warning', 'bg-warning', 'bg-opacity-10', 'border-primary', 'bg-primary');
+        c.style.borderColor = '#dee2e6';
+    });
+    if (cardEl) {
+        cardEl.style.borderColor = '#c5a059';
+        cardEl.classList.add('bg-warning', 'bg-opacity-10');
+    }
+
+    var today = new Date();
+    var previewBox = document.getElementById('installmentPreviewBox');
+    var scheduleList = document.getElementById('installmentScheduleList');
+
+    if (key === 'STARTER_CASH') {
+        document.getElementById('radioEditionStarter').checked = true;
+        document.getElementById('durationSelect').value = 'LIFETIME';
+        document.getElementById('paymentModelSelect').value = 'كاش كامل';
+        document.getElementById('totalPrice').value = 1500;
+        document.getElementById('paidAmount').value = 1500;
+        document.getElementById('nextPaymentDate').value = '';
+        previewBox.classList.add('d-none');
+    } else if (key === 'STARTER_PROMO') {
+        document.getElementById('radioEditionStarter').checked = true;
+        document.getElementById('durationSelect').value = 'LIFETIME';
+        document.getElementById('paymentModelSelect').value = 'كاش كامل';
+        document.getElementById('totalPrice').value = 1200;
+        document.getElementById('paidAmount').value = 1200;
+        document.getElementById('nextPaymentDate').value = '';
+        previewBox.classList.add('d-none');
+    } else if (key === 'FULL_CASH_LAUNCH') {
+        document.getElementById('radioEditionFull').checked = true;
+        document.getElementById('durationSelect').value = 'LIFETIME';
+        document.getElementById('paymentModelSelect').value = 'كاش كامل';
+        document.getElementById('totalPrice').value = 8900;
+        document.getElementById('paidAmount').value = 8900;
+        document.getElementById('nextPaymentDate').value = '';
+        previewBox.classList.add('d-none');
+    } else if (key === 'FULL_CASH_STANDARD') {
+        document.getElementById('radioEditionFull').checked = true;
+        document.getElementById('durationSelect').value = 'LIFETIME';
+        document.getElementById('paymentModelSelect').value = 'كاش كامل';
+        document.getElementById('totalPrice').value = 12000;
+        document.getElementById('paidAmount').value = 12000;
+        document.getElementById('nextPaymentDate').value = '';
+        previewBox.classList.add('d-none');
+    } else if (key === 'FULL_INSTALLMENT_QUARTERLY') {
+        document.getElementById('radioEditionFull').checked = true;
+        document.getElementById('durationSelect').value = '90_DAYS'; // 90 days validity renewed per payment
+        document.getElementById('paymentModelSelect').value = 'تقسيط ربع سنوي';
+        document.getElementById('totalPrice').value = 10500;
+        document.getElementById('paidAmount').value = 3000;
+        
+        var q1Date = addDays(today, 90);
+        var q2Date = addDays(today, 180);
+        var q3Date = addDays(today, 270);
+        document.getElementById('nextPaymentDate').value = formatDate(q1Date);
+
+        previewBox.classList.remove('d-none');
+        document.getElementById('previewPlanBadge').innerText = 'خطة تقسيط ربع سنوي (4 دفعات)';
+        scheduleList.innerHTML = `
+            <div class="row g-2 text-center">
+                <div class="col-6 col-md-3"><div class="p-2 bg-white rounded border border-success"><strong class="text-success d-block">دفعة اليوم (مقدم)</strong> 3,000 ج.م <span class="d-block text-muted" style="font-size:11px;">تفعيل 90 يوماً</span></div></div>
+                <div class="col-6 col-md-3"><div class="p-2 bg-white rounded border"><strong class="text-primary d-block">القسط 1</strong> 2,500 ج.م <span class="d-block text-muted" style="font-size:11px;">${formatDate(q1Date)}</span></div></div>
+                <div class="col-6 col-md-3"><div class="p-2 bg-white rounded border"><strong class="text-primary d-block">القسط 2</strong> 2,500 ج.م <span class="d-block text-muted" style="font-size:11px;">${formatDate(q2Date)}</span></div></div>
+                <div class="col-6 col-md-3"><div class="p-2 bg-white rounded border"><strong class="text-primary d-block">القسط 3 (الأخير)</strong> 2,500 ج.م <span class="d-block text-muted" style="font-size:11px;">${formatDate(q3Date)} (تفعيل مدى الحياة)</span></div></div>
+            </div>
+        `;
+    } else if (key === 'FULL_INSTALLMENT_MONTHLY') {
+        document.getElementById('radioEditionFull').checked = true;
+        document.getElementById('durationSelect').value = '30_DAYS'; // 30 days validity renewed monthly
+        document.getElementById('paymentModelSelect').value = 'تقسيط شهري';
+        document.getElementById('totalPrice').value = 10000;
+        document.getElementById('paidAmount').value = 1000;
+        
+        var m1Date = addDays(today, 30);
+        document.getElementById('nextPaymentDate').value = formatDate(m1Date);
+
+        previewBox.classList.remove('d-none');
+        document.getElementById('previewPlanBadge').innerText = 'خطة تقسيط شهري (10 أشهر)';
+        scheduleList.innerHTML = `
+            <div class="p-2 bg-white rounded border">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-success fw-bold"><i class="fa-solid fa-check-circle me-1"></i> دفعة اليوم (مقدم): 1,000 ج.م (تفعيل شهر)</span>
+                    <span class="text-muted small">المتبقي: 9 أقساط شهرياً × 1,000 ج.م</span>
+                </div>
+                <div class="text-muted small">تاريخ أول قسط قادم: <strong>${formatDate(m1Date)}</strong> • يتجدد الكود شهرياً حتى سداد كامل القيمة ليصبح مدى الحياة.</div>
+            </div>
+        `;
+    } else if (key === 'LITE_ANNUAL') {
+        document.getElementById('radioEditionLite').checked = true;
+        document.getElementById('durationSelect').value = 'YEARLY';
+        document.getElementById('paymentModelSelect').value = 'اشتراك سنوي';
+        document.getElementById('totalPrice').value = 3500;
+        document.getElementById('paidAmount').value = 3500;
+        document.getElementById('nextPaymentDate').value = formatDate(addDays(today, 365));
+        previewBox.classList.add('d-none');
+    } else if (key === 'DEMO_FREE') {
+        document.getElementById('radioEditionFull').checked = true;
+        document.getElementById('durationSelect').value = 'CUSTOM';
+        toggleCustomDays();
+        document.getElementById('customDaysInput').value = 7;
+        document.getElementById('paymentModelSelect').value = 'نسخة تجريبية مجانية';
+        document.getElementById('totalPrice').value = 0;
+        document.getElementById('paidAmount').value = 0;
+        document.getElementById('nextPaymentDate').value = '';
+        previewBox.classList.add('d-none');
+    } else if (key === 'COMPLIMENTARY_GIFT') {
+        document.getElementById('radioEditionFull').checked = true;
+        document.getElementById('durationSelect').value = 'LIFETIME';
+        document.getElementById('paymentModelSelect').value = 'نسخة مجانية / هدية';
+        document.getElementById('totalPrice').value = 0;
+        document.getElementById('paidAmount').value = 0;
+        document.getElementById('nextPaymentDate').value = '';
+        document.getElementById('isComplimentaryCheck').checked = true;
+        toggleComplimentaryBox();
+        previewBox.classList.add('d-none');
+    }
+
+    toggleCustomDays();
+    calcRemaining();
+    calcRepCommission();
+}
+
+function toggleComplimentaryBox() {
+    var isComp = document.getElementById('isComplimentaryCheck').checked;
+    var box = document.getElementById('complimentaryBox');
+    if (isComp) {
+        box.classList.remove('d-none');
+        document.getElementById('totalPrice').value = 0;
+        document.getElementById('paidAmount').value = 0;
+        calcRemaining();
+    } else {
+        box.classList.add('d-none');
+    }
+}
+
+function calcReferralDiscount() {
+    var refSel = document.getElementById('referredBySelect');
+    var actionBox = document.getElementById('referralActionBox');
+    var discInput = document.getElementById('referralDiscountInput');
+    var rewInput = document.getElementById('referralRewardInput');
+
+    if (refSel.value) {
+        actionBox.classList.remove('d-none');
+        // Check edition
+        var isFull = document.getElementById('radioEditionFull').checked;
+        var isStarter = document.getElementById('radioEditionStarter').checked;
+        
+        var baseTotal = isFull ? 8900 : (isStarter ? 1500 : 3500);
+        var discount = Math.round(baseTotal * 0.10); // 10% discount
+        var reward = isFull ? 500 : 150; // 500 for full, 150 for starter
+
+        discInput.value = discount;
+        rewInput.value = reward;
+
+        // Apply discount on total price
+        var newTotal = Math.max(0, baseTotal - discount);
+        document.getElementById('totalPrice').value = newTotal;
+        document.getElementById('paidAmount').value = newTotal;
+        calcRemaining();
+    } else {
+        actionBox.classList.add('d-none');
+        discInput.value = 0;
+        rewInput.value = 0;
+    }
+}
+
+function calcRepCommission() {
+    var repSel = document.getElementById('salesRepSelect');
+    var commInput = document.getElementById('repCommissionInput');
+    if (!repSel || !commInput) return;
+
+    if (repSel.value) {
+        var isFull = document.getElementById('radioEditionFull').checked;
+        var isStarter = document.getElementById('radioEditionStarter').checked;
+        var payModel = document.getElementById('paymentModelSelect').value;
+
+        if (isFull) {
+            if (payModel.includes('تقسيط')) {
+                commInput.value = 600; // 600 on down payment + 300 per installment
+            } else {
+                commInput.value = 1500;
+            }
+        } else if (isStarter) {
+            commInput.value = 300;
+        } else {
+            commInput.value = 600;
+        }
+    } else {
+        commInput.value = 0;
+    }
+}
+
+// Auto-select initial preset on load
+window.addEventListener('DOMContentLoaded', () => {
+    applyPreset('FULL_CASH_LAUNCH', null);
+});
+</script>
+{% endblock %}

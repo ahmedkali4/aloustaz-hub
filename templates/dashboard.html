@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+{% block title %}لوحة المؤشرات والمبيعات{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <h4 class="fw-bold mb-1"><i class="fa-solid fa-chart-pie text-warning me-2"></i> لوحة متابعة المبيعات والتراخيص</h4>
+        <p class="text-muted small mb-0">نظرة شاملة ولحظية على المشتركين، الإيرادات، ومواعيد الأقساط القادمة</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('download_db_backup') }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 shadow-sm px-3">
+            <i class="fa-solid fa-cloud-arrow-down"></i> نسخة احتياطية
+        </a>
+        <a href="{{ url_for('export_clients') }}" class="btn btn-outline-success btn-sm d-flex align-items-center gap-1 shadow-sm px-3">
+            <i class="fa-solid fa-file-excel"></i> تصدير Excel
+        </a>
+        <a href="{{ url_for('generate_license') }}" class="btn btn-gold btn-sm d-flex align-items-center gap-1 shadow-sm px-3">
+            <i class="fa-solid fa-key"></i> توليد ترخيص جديد 🔑
+        </a>
+    </div>
+</div>
+
+<!-- Mobile Cloud Tunnel Quick Banner -->
+<div class="card border-0 shadow-sm rounded-3 mb-4 text-white p-3" style="background: linear-gradient(90deg, #152238 0%, #1e3355 100%); border-right: 5px solid #c5a059 !important;">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-warning bg-opacity-25 p-3 text-warning">
+                <i class="fa-solid fa-qrcode fs-3"></i>
+            </div>
+            <div>
+                <h6 class="fw-bold mb-1 text-white">اتصال الموبايل الفوري بكود الـ QR</h6>
+                <p class="text-white-50 small mb-0">يمكنك متابعة المبيعات وتوليد التراخيص للعملاء من هاتفك المحمول بمجرد مسح الكود بكاميرا الموبايل دون كتابة أي روابط.</p>
+            </div>
+        </div>
+        <div>
+            <a href="{{ url_for('mobile_qr_view') }}" class="btn btn-warning btn-sm fw-bold px-3 py-2 shadow-sm">
+                <i class="fa-solid fa-mobile-screen-button me-1"></i> فتح كود المسح (QR)
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- KPI Cards (Clickable to Filter) -->
+<div class="row g-3 mb-4">
+    <!-- Card 1: Total Clients -->
+    <div class="col-6 col-md-4 col-lg-2">
+        <a href="{{ url_for('clients_list') }}" class="card card-stat bg-white p-3 h-100 border-start border-4 border-primary">
+            <div class="text-muted small fw-bold mb-1">إجمالي المكاتب</div>
+            <div class="fs-3 fw-bold text-dark">{{ metrics.total_clients }}</div>
+            <div class="small text-primary mt-1"><i class="fa-solid fa-users me-1"></i> جميع العملاء &larr;</div>
+        </a>
+    </div>
+
+    <!-- Card 2: Full Edition (Click to filter FULL) -->
+    <div class="col-6 col-md-4 col-lg-2">
+        <a href="{{ url_for('clients_list', filter='FULL') }}" class="card card-stat bg-white p-3 h-100 border-start border-4 border-warning">
+            <div class="text-muted small fw-bold mb-1">👑 النسخة الكاملة</div>
+            <div class="fs-3 fw-bold text-warning">{{ metrics.full_clients }}</div>
+            <div class="small text-muted mt-1">Pro Lifetime &larr;</div>
+        </a>
+    </div>
+
+    <!-- Card 3: Starter Edition (Click to filter STARTER) -->
+    <div class="col-6 col-md-4 col-lg-2">
+        <a href="{{ url_for('clients_list', filter='STARTER') }}" class="card card-stat bg-white p-3 h-100 border-start border-4 border-success">
+            <div class="text-muted small fw-bold mb-1">🚀 باقة الانطلاق</div>
+            <div class="fs-3 fw-bold text-success">{{ metrics.starter_clients }}</div>
+            <div class="small text-muted mt-1">20 قضية &larr;</div>
+        </a>
+    </div>
+
+    <!-- Card 4: Lite Edition (Click to filter LITE) -->
+    <div class="col-6 col-md-4 col-lg-2">
+        <a href="{{ url_for('clients_list', filter='LITE') }}" class="card card-stat bg-white p-3 h-100 border-start border-4 border-info">
+            <div class="text-muted small fw-bold mb-1">🪶 النسخة الاقتصادية</div>
+            <div class="fs-3 fw-bold text-info">{{ metrics.lite_clients }}</div>
+            <div class="small text-muted mt-1">100 قضية &larr;</div>
+        </a>
+    </div>
+
+    <!-- Card 5: Installments / Leased (Click to filter INSTALLMENTS) -->
+    <div class="col-6 col-md-4 col-lg-2">
+        <a href="{{ url_for('clients_list', filter='INSTALLMENTS') }}" class="card card-stat bg-white p-3 h-100 border-start border-4 border-danger">
+            <div class="text-muted small fw-bold mb-1">⏳ أقساط جارية</div>
+            <div class="fs-3 fw-bold text-danger">{{ metrics.active_installments_count }}</div>
+            <div class="small text-danger mt-1">متابعة التحصيل &larr;</div>
+        </a>
+    </div>
+
+    <!-- Card 6: Leads Pipeline -->
+    <div class="col-6 col-md-4 col-lg-2">
+        <a href="{{ url_for('leads_list') }}" class="card card-stat bg-white p-3 h-100 border-start border-4 border-secondary">
+            <div class="text-muted small fw-bold mb-1">🎯 عملاء محتملون</div>
+            <div class="fs-3 fw-bold text-secondary">{{ metrics.active_leads_count }}</div>
+            <div class="small text-muted mt-1">قيد المتابعة &larr;</div>
+        </a>
+    </div>
+</div>
+
+<!-- Financial Summary Row -->
+<div class="row g-3 mb-4">
+    <!-- Card 1: Total Revenue -->
+    <div class="col-12 col-md-6 col-lg-3">
+        <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100 border-end border-4 border-success">
+            <span class="text-muted small fw-bold d-block mb-1">السيولة النقدية المحصلة (Cash-in)</span>
+            <div class="fs-4 fw-bold text-success">{{ "{:,.2f}".format(metrics.total_revenue) }} ج.م</div>
+            <div class="small text-muted mt-1"><i class="fa-solid fa-vault me-1"></i> إجمالي المدفوع بالخزينة</div>
+        </div>
+    </div>
+
+    <!-- Card 2: Receivables -->
+    <div class="col-12 col-md-6 col-lg-3">
+        <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100 border-end border-4 border-danger">
+            <span class="text-muted small fw-bold d-block mb-1">الأقساط المستحقة القادمة</span>
+            <div class="fs-4 fw-bold text-danger">{{ "{:,.2f}".format(metrics.total_receivables) }} ج.م</div>
+            <div class="small text-danger mt-1"><i class="fa-solid fa-clock me-1"></i> مستحقات آجلة قيد التحصيل</div>
+        </div>
+    </div>
+
+    <!-- Card 3: Complimentary PR Gifts -->
+    <div class="col-12 col-md-6 col-lg-3">
+        <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100 border-end border-4 border-secondary">
+            <span class="text-muted small fw-bold d-block mb-1">نسخ المجاملات والدعاية (PR)</span>
+            <div class="fs-4 fw-bold text-secondary">{{ metrics.complimentary_count }} <span class="fs-6 fw-normal text-muted">نسخة مهداة</span></div>
+            <div class="small text-muted mt-1"><i class="fa-solid fa-gift me-1"></i> قيمة سوقية: {{ "{:,.0f}".format(metrics.complimentary_total_value) }} ج.م</div>
+        </div>
+    </div>
+
+    <!-- Card 4: Referral Network -->
+    <div class="col-12 col-md-6 col-lg-3">
+        <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100 border-end border-4 border-primary">
+            <span class="text-muted small fw-bold d-block mb-1">مبيعات الإحالة والترشيحات</span>
+            <div class="fs-4 fw-bold text-primary">{{ metrics.referral_count }} <span class="fs-6 fw-normal text-muted">عملاء بترشيح</span></div>
+            <div class="small text-primary mt-1"><i class="fa-solid fa-handshake me-1"></i> مكافآت مستحقة: {{ "{:,.0f}".format(metrics.referral_total_rewards) }} ج.م</div>
+        </div>
+    </div>
+</div>
+
+<!-- Sales Reps Summary Banner -->
+<div class="card border-0 shadow-sm rounded-3 mb-4 p-3 bg-white border-start border-4 border-warning">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="bg-warning bg-opacity-10 p-3 rounded-circle text-warning">
+                <i class="fa-solid fa-user-tie fa-2x"></i>
+            </div>
+            <div>
+                <h6 class="fw-bold mb-1 text-dark">مناديب وسفراء المبيعات الميدانيين ({{ metrics.active_reps_count }} مندوب نشط)</h6>
+                <div class="small text-muted">
+                    إجمالي العمولات المكتسبة: <strong class="text-success">{{ "{:,.0f}".format(metrics.total_rep_earned) }} ج.م</strong> &bull;
+                    المنصرف كاش: <strong class="text-info">{{ "{:,.0f}".format(metrics.total_rep_paid) }} ج.م</strong> &bull;
+                    الرصيد المستحق للصرف: <strong class="text-danger">{{ "{:,.0f}".format(metrics.total_rep_balance) }} ج.م</strong>
+                </div>
+            </div>
+        </div>
+        <div>
+            <a href="{{ url_for('reps_list') }}" class="btn btn-outline-dark btn-sm fw-bold px-3">
+                <i class="fa-solid fa-users me-1"></i> إدارة المناديب والعمولات &larr;
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Main Section: Upcoming Installments Radar & Recent Licenses -->
+<div class="row g-4">
+    <!-- Right Col: Upcoming Installment Deadlines -->
+    <div class="col-12 col-lg-6">
+        <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
+            <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                <span class="fw-bold fs-6 text-danger">
+                    <i class="fa-solid fa-bell me-2"></i> رادار الأقساط ومواعيد التجديد القادمة
+                </span>
+                <span class="badge bg-danger rounded-pill">{{ upcoming_installments|length }} مستحق</span>
+            </div>
+            <div class="card-body p-0">
+                {% if upcoming_installments %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 text-nowrap">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>اسم المحامي / المكتب</th>
+                                <th>المتبقي</th>
+                                <th>تاريخ الاستحقاق</th>
+                                <th>إجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in upcoming_installments %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('client_detail', id=c.id) }}" class="fw-bold text-dark text-decoration-none d-block">
+                                        {{ c.firm_name }}
+                                    </a>
+                                    <small class="text-muted"><i class="fa-solid fa-user me-1"></i> {{ c.full_name }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-danger bg-opacity-10 text-danger fw-bold fs-6">
+                                        {{ "{:,.0f}".format(c.remaining_amount) }} ج.م
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="small fw-bold text-muted">
+                                        <i class="fa-solid fa-calendar-day text-warning me-1"></i> {{ c.next_payment_date }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="https://wa.me/{{ c.phone|replace('+','')|replace(' ','') }}?text={{ ('سعادة المستشار / ' ~ c.full_name ~ ' المحترم، نود تذكير سيادتكم بموعد استحقاق القسط القادم لمنظومة الأستاذ لإدارة مكاتب المحاماة وقيمته ' ~ '{:,.0f}'.format(c.remaining_amount) ~ ' ج.م وتاريخ استحقاقه ' ~ c.next_payment_date ~ '. مع تحيات إدارة الحسابات - Ahmed Mabrouk')|urlencode }}" target="_blank" class="btn btn-outline-success btn-sm py-1 px-2" title="إرسال تذكير واتساب">
+                                        <i class="fa-brands fa-whatsapp fa-lg"></i>
+                                    </a>
+                                    <a href="{{ url_for('client_detail', id=c.id) }}" class="btn btn-outline-primary btn-sm py-1 px-2" title="تفاصيل العميل">
+                                        <i class="fa-solid fa-folder-open"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-circle-check fa-3x text-success mb-3"></i>
+                    <p class="mb-0 fw-semibold">ممتاز! لا توجد أقساط متأخرة أو مستحقة في الوقت الحالي.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Left Col: Recent Licenses Issued -->
+    <div class="col-12 col-lg-6">
+        <div class="card border-0 shadow-sm rounded-3 h-100 bg-white">
+            <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                <span class="fw-bold fs-6 text-dark">
+                    <i class="fa-solid fa-key text-warning me-2"></i> أحدث التراخيص الصادرة
+                </span>
+                <a href="{{ url_for('generate_license') }}" class="btn btn-sm btn-outline-dark py-1 px-2">
+                    <i class="fa-solid fa-plus me-1"></i> إصدار ترخيص
+                </a>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_licenses %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 text-nowrap">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>العميل</th>
+                                <th>الباقة</th>
+                                <th>المدة</th>
+                                <th>كود الجهاز</th>
+                                <th>التاريخ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for l in recent_licenses %}
+                            <tr>
+                                <td>
+                                    {% if l.client_id %}
+                                    <a href="{{ url_for('client_detail', id=l.client_id) }}" class="fw-bold text-primary text-decoration-none">
+                                        {{ l.firm_name or l.client_name }}
+                                    </a>
+                                    {% else %}
+                                    <span class="fw-bold text-dark">{{ l.client_name }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if l.license_type in ['FULL', 'ENTERPRISE_LIFETIME'] %}
+                                    <span class="badge badge-edition-full"><i class="fa-solid fa-crown me-1"></i> Full Pro</span>
+                                    {% elif l.license_type in ['STARTER', 'STARTER_EDITION'] %}
+                                    <span class="badge badge-edition-starter"><i class="fa-solid fa-rocket me-1"></i> Starter</span>
+                                    {% else %}
+                                    <span class="badge badge-edition-lite"><i class="fa-solid fa-feather me-1"></i> Lite</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if not l.expires_at %}
+                                    <span class="badge bg-success text-white">دائم مدى الحياة</span>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark">{{ l.duration_type }} ({{ l.expires_at[:10] }})</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <code class="text-dark small dir-ltr">{{ l.machine_id }}</code>
+                                </td>
+                                <td>
+                                    <span class="small text-muted">{{ l.created_at[:10] }}</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-key fa-3x text-muted mb-3"></i>
+                    <p class="mb-0">لم يتم إصدار أي تراخيص بعد. اضغط "توليد ترخيص جديد" للبدء.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

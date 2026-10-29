@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}سجل المكاتب والعملاء{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <h4 class="fw-bold mb-1"><i class="fa-solid fa-building-columns text-warning me-2"></i> سجل المكاتب والعملاء المشتركين</h4>
+        <p class="text-muted small mb-0">إدارة ومتابعة كافة المكاتب، التراخيص المفعلة، والأقساط المستحقة</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('export_clients') }}" class="btn btn-outline-success btn-sm">
+            <i class="fa-solid fa-file-excel me-1"></i> تصدير Excel
+        </a>
+        <a href="{{ url_for('generate_license') }}" class="btn btn-gold btn-sm">
+            <i class="fa-solid fa-plus me-1"></i> إصدار ترخيص لعميل جديد
+        </a>
+    </div>
+</div>
+
+<!-- Filter Pills -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3 bg-white p-3 rounded-3 shadow-sm">
+    <div class="btn-group btn-group-sm flex-wrap" role="group">
+        <a href="{{ url_for('clients_list', filter='all') }}" class="btn btn-{% if current_filter == 'ALL' %}dark{% else %}outline-dark{% endif %}">
+            جميع المكاتب
+        </a>
+        <a href="{{ url_for('clients_list', filter='FULL') }}" class="btn btn-{% if current_filter == 'FULL' %}warning text-dark fw-bold{% else %}outline-warning text-dark{% endif %}">
+            👑 النسخة الكاملة (Pro)
+        </a>
+        <a href="{{ url_for('clients_list', filter='STARTER') }}" class="btn btn-{% if current_filter == 'STARTER' %}success fw-bold{% else %}outline-success{% endif %}">
+            🚀 باقة الانطلاق (Starter)
+        </a>
+        <a href="{{ url_for('clients_list', filter='LITE') }}" class="btn btn-{% if current_filter == 'LITE' %}info text-dark fw-bold{% else %}outline-info text-dark{% endif %}">
+            🪶 النسخة الاقتصادية (Lite)
+        </a>
+        <a href="{{ url_for('clients_list', filter='INSTALLMENTS') }}" class="btn btn-{% if current_filter == 'INSTALLMENTS' %}danger fw-bold{% else %}outline-danger{% endif %}">
+            ⏳ أقساط جارية
+        </a>
+    </div>
+
+    <!-- Search Form -->
+    <form method="GET" action="{{ url_for('clients_list') }}" class="d-flex gap-2">
+        <input type="hidden" name="filter" value="{{ current_filter }}">
+        <div class="input-group input-group-sm" style="min-width: 250px;">
+            <input type="text" name="q" class="form-control" placeholder="بحث بالاسم أو الهاتف أو كود الجهاز..." value="{{ search_query }}">
+            <button class="btn btn-dark" type="submit"><i class="fa-solid fa-search"></i></button>
+            {% if search_query %}
+            <a href="{{ url_for('clients_list', filter=current_filter) }}" class="btn btn-outline-secondary"><i class="fa-solid fa-xmark"></i></a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- Clients Table -->
+<div class="card border-0 shadow-sm rounded-3 bg-white overflow-hidden">
+    <div class="card-body p-0">
+        {% if clients %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 text-nowrap">
+                <thead class="table-light small">
+                    <tr>
+                        <th>#</th>
+                        <th>المكتب والمحامي</th>
+                        <th>الهاتف / المدينة</th>
+                        <th>الباقة</th>
+                        <th>كود الجهاز (Machine ID)</th>
+                        <th>الماليات (المسدد / المتبقي)</th>
+                        <th>القسط القادم</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in clients %}
+                    <tr>
+                        <td class="text-muted small">{{ c.id }}</td>
+                        <td>
+                            <a href="{{ url_for('client_detail', id=c.id) }}" class="fw-bold text-dark text-decoration-none d-block">
+                                {{ c.firm_name }}
+                            </a>
+                            <small class="text-muted"><i class="fa-solid fa-user me-1 text-primary"></i> {{ c.full_name }}</small>
+                        </td>
+                        <td>
+                            <span class="d-block small"><i class="fa-solid fa-phone text-success me-1"></i> <span class="dir-ltr">{{ c.phone }}</span></span>
+                            {% if c.city %}<small class="text-muted"><i class="fa-solid fa-location-dot me-1 text-danger"></i> {{ c.city }}</small>{% endif %}
+                        </td>
+                        <td>
+                            {% if c.current_edition in ['FULL', 'ENTERPRISE_LIFETIME'] %}
+                            <span class="badge badge-edition-full"><i class="fa-solid fa-crown me-1"></i> Full Pro</span>
+                            {% elif c.current_edition in ['STARTER', 'STARTER_EDITION'] %}
+                            <span class="badge badge-edition-starter"><i class="fa-solid fa-rocket me-1"></i> Starter (20)</span>
+                            {% else %}
+                            <span class="badge badge-edition-lite"><i class="fa-solid fa-feather me-1"></i> Lite (100)</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <code class="text-dark small dir-ltr fw-bold">{{ c.machine_id }}</code>
+                        </td>
+                        <td>
+                            <span class="text-success small fw-bold d-block">مسدد: {{ "{:,.0f}".format(c.paid_amount) }} ج.م</span>
+                            {% if c.remaining_amount > 0 %}
+                            <span class="badge bg-danger bg-opacity-10 text-danger fw-bold small">
+                                متبقي: {{ "{:,.0f}".format(c.remaining_amount) }} ج.م
+                            </span>
+                            {% else %}
+                            <span class="badge bg-success bg-opacity-10 text-success small">خالص بالكامل</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if c.next_payment_date %}
+                            <span class="small fw-bold text-danger">
+                                <i class="fa-solid fa-calendar-day me-1"></i> {{ c.next_payment_date }}
+                            </span>
+                            {% else %}
+                            <span class="text-muted small">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <a href="https://wa.me/{{ c.phone|replace('+','')|replace(' ','') }}" target="_blank" class="btn btn-outline-success btn-sm py-1 px-2" title="فتح محادثة واتساب">
+                                    <i class="fa-brands fa-whatsapp"></i>
+                                </a>
+                                <a href="{{ url_for('client_detail', id=c.id) }}" class="btn btn-outline-primary btn-sm py-1 px-2" title="فتح الملف والتراخيص">
+                                    <i class="fa-solid fa-folder-open"></i>
+                                </a>
+                                <a href="{{ url_for('generate_license', client_id=c.id) }}" class="btn btn-outline-warning btn-sm py-1 px-2 text-dark" title="إصدار ترخيص جديد">
+                                    <i class="fa-solid fa-key"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="fa-solid fa-building-columns fa-3x text-muted mb-3"></i>
+            <p class="mb-0 fw-semibold">لا يوجد عملاء مطابقين للبحث أو الفلتر المحدد.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}سجل مناديب وسفراء المبيعات{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <h4 class="fw-bold mb-1"><i class="fa-solid fa-user-tie text-warning me-2"></i> سجل مناديب وسفراء المبيعات الميدانيين</h4>
+        <p class="text-muted small mb-0">إدارة شبكة المحامين والمسوقين الميدانيين في المحاكم واحتساب عمولاتهم وصرفها</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-gold btn-sm d-flex align-items-center gap-1 shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#addRepModal">
+            <i class="fa-solid fa-plus-circle"></i> إضافة مندوب جديد 🤝
+        </button>
+    </div>
+</div>
+
+<!-- Reps Table Card -->
+<div class="card border-0 shadow-sm rounded-3 bg-white overflow-hidden">
+    <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+        <span class="fw-bold text-dark"><i class="fa-solid fa-users me-2 text-primary"></i> قائمة المناديب المعتمدين ({{ reps|length }})</span>
+        <span class="badge bg-light text-dark border">عمولة معيارية: 1,500 ج.م للكاملة • 300 ج.م للانطلاق</span>
+    </div>
+    <div class="card-body p-0">
+        {% if reps %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 text-nowrap">
+                <thead class="table-light small">
+                    <tr>
+                        <th>كود المندوب</th>
+                        <th>اسم المندوب / المحامي</th>
+                        <th>الهاتف / الواتساب</th>
+                        <th>المحكمة والنطاق الجغرافي</th>
+                        <th>عدد المبيعات</th>
+                        <th>إجمالي العمولات</th>
+                        <th>الرصيد المستحق</th>
+                        <th>الحالة</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in reps %}
+                    <tr>
+                        <td>
+                            <span class="badge bg-navy text-warning border px-2 py-1 font-monospace fs-6" style="background-color: #152238;">
+                                {{ r.rep_code or ('REP-' ~ r.id) }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('rep_detail', id=r.id) }}" class="fw-bold text-dark text-decoration-none">
+                                {{ r.name }}
+                            </a>
+                            {% if r.email %}<small class="text-muted d-block">{{ r.email }}</small>{% endif %}
+                        </td>
+                        <td class="dir-ltr text-end">
+                            <a href="https://wa.me/{{ r.phone|replace('+','')|replace(' ','') }}" target="_blank" class="text-decoration-none text-success small fw-bold">
+                                <i class="fa-brands fa-whatsapp me-1"></i> {{ r.phone }}
+                            </a>
+                        </td>
+                        <td>
+                            <span class="small text-muted"><i class="fa-solid fa-location-dot text-danger me-1"></i> {{ r.court_coverage or r.city or 'عام' }}</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border fw-bold fs-6">{{ r.sales_count }} بيعة</span>
+                        </td>
+                        <td>
+                            <span class="fw-bold text-success">{{ "{:,.0f}".format(r.total_earned) }} ج.م</span>
+                        </td>
+                        <td>
+                            {% if r.balance > 0 %}
+                            <span class="badge bg-danger bg-opacity-10 text-danger fw-bold fs-6">{{ "{:,.0f}".format(r.balance) }} ج.م مستحق</span>
+                            {% else %}
+                            <span class="badge bg-success bg-opacity-10 text-success fw-bold">خالص بالكامل</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if r.is_active %}
+                            <span class="badge bg-success"><i class="fa-solid fa-circle-check me-1"></i> نشط</span>
+                            {% else %}
+                            <span class="badge bg-secondary">موقوف</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('rep_detail', id=r.id) }}" class="btn btn-outline-primary btn-sm py-1 px-2 fw-bold">
+                                <i class="fa-solid fa-folder-open me-1"></i> كشف الحساب
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="fa-solid fa-user-plus display-4 text-muted mb-3"></i>
+            <h5 class="fw-bold text-dark">لا يوجد مناديب مسجلين حتى الآن</h5>
+            <p class="small text-muted mb-3">أضف شباب المحامين والمسوقين الميدانيين ليكون لكل منهم كود مرجعي وتتبع مبيعاتهم وعمولاتهم آلياً.</p>
+            <button type="button" class="btn btn-gold btn-sm px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#addRepModal">
+                <i class="fa-solid fa-plus-circle me-1"></i> تسجيل أول مندوب الآن
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal: Add Sales Rep -->
+<div class="modal fade" id="addRepModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('add_rep') }}">
+                <div class="modal-header bg-navy text-white" style="background-color: #152238; border-bottom: 3px solid #c5a059;">
+                    <h5 class="modal-title fw-bold text-warning"><i class="fa-solid fa-user-plus me-2"></i> إضافة مندوب / سفير مبيعات ميداني</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">اسم المندوب / المحامي الشاب: <span class="text-danger">*</span></label>
+                        <input type="text" name="name" class="form-control" required placeholder="مثلاً: أ / محمد عبد الرحمن">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">رقم الهاتف / الواتساب: <span class="text-danger">*</span></label>
+                        <input type="text" name="phone" class="form-control" required placeholder="010XXXXXXXX">
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold small text-muted">المحافظة / المدينة:</label>
+                            <input type="text" name="city" class="form-control" placeholder="القاهرة / الجيزة">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold small text-muted">البريد الإلكتروني (اختياري):</label>
+                            <input type="email" name="email" class="form-control" placeholder="rep@law.com">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">المحكمة أو النطاق الجغرافي المغطى:</label>
+                        <input type="text" name="court_coverage" class="form-control" placeholder="مثلاً: مجمع محاكم الجيزة / محكمة شمال القاهرة الابتدائية">
+                        <div class="form-text small">المحاكم وغرف المحامين التي يتردد عليها يومياً للتسويق الميداني.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">ملاحظات داخلية خاصة بالاتفاق:</label>
+                        <textarea name="notes" class="form-control" rows="2" placeholder="أي تفاصيل خاصة بالاتفاق المالي أو وسائل الصرف"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-gold btn-sm fw-bold px-4">
+                        <i class="fa-solid fa-check me-1"></i> حفظ وتوليد كود المندوب
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
