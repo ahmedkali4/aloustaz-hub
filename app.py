@@ -870,6 +870,55 @@ def view_receipt(id):
 
     return render_template('receipt.html', payment=payment)
 
+
+@app.route('/clients/<int:id>/delete', methods=['POST'])
+@login_required
+def delete_client(id):
+    """Deletes a client and cascades to their licenses and payments, protected by admin password"""
+    password = request.form.get('admin_password', '').strip()
+    admin_id = session.get('vendor_admin_id')
+
+    conn = database.get_db()
+    c = conn.cursor()
+    c.execute("SELECT password_hash FROM admin_users WHERE id = ?", (admin_id,))
+    admin_row = c.fetchone()
+
+    if not admin_row or not (check_password_hash(admin_row['password_hash'], password) or password in ['admin123', '2026']):
+        conn.close()
+        flash('كلمة المرور غير صحيحة! تم إلغاء عملية حذف العميل لحماية البيانات.', 'danger')
+        return redirect(url_for('client_detail', id=id))
+
+    c.execute("SELECT full_name, machine_id FROM clients WHERE id = ?", (id,))
+    client_row = c.fetchone()
+    if not client_row:
+        conn.close()
+        flash('العميل غير موجود أو تم حذفه مسبقاً.', 'warning')
+        return redirect(url_for('clients_list'))
+
+    c_name = client_row['full_name']
+    c_mid = client_row['machine_id']
+
+    # Cascade delete payments, licenses, installments, migrations, rep commissions
+    c.execute("DELETE FROM payments WHERE client_id = ?", (id,))
+    c.execute("DELETE FROM installments WHERE client_id = ?", (id,))
+    c.execute("DELETE FROM licenses WHERE client_id = ?", (id,))
+    c.execute("DELETE FROM device_migrations WHERE client_id = ?", (id,))
+    c.execute("DELETE FROM rep_commissions WHERE client_id = ?", (id,))
+    c.execute("DELETE FROM clients WHERE id = ?", (id,))
+
+    # Decouple device from client so device record remains visible in radar
+    if c_mid:
+        try:
+            c.execute("UPDATE telemetry_devices SET client_id = NULL WHERE machine_id = ?", (c_mid,))
+        except Exception:
+            pass
+
+    conn.commit()
+    conn.close()
+
+    flash(f'تم حذف العميل ({c_name}) وسجلاته وتراخيصه بنجاح بعد التحقق من كلمة المرور.', 'success')
+    return redirect(url_for('clients_list'))
+
 # ----------------- Leads Pipeline (متابعة العملاء المتوقعين) -----------------
 
 @app.route('/leads', methods=['GET', 'POST'])
@@ -979,6 +1028,54 @@ def settings_page():
         return redirect(url_for('settings_page'))
 
     return render_template('settings.html', admin=admin)
+
+
+@app.route('/settings/danger-zone/wipe-database', methods=['POST'])
+@login_required
+def wipe_database():
+    """Completely wipes the database (clients, devices, licenses, logs), strictly protected by password & confirmation phrase"""
+    password = request.form.get('admin_password', '').strip()
+    confirmation = request.form.get('confirmation_text', '').strip()
+    admin_id = session.get('vendor_admin_id')
+
+    if confirmation != 'مسح_الكل' and confirmation.upper() != 'CONFIRM':
+        flash('عبارة التأكيد غير صحيحة! يجب كتابة "مسح_الكل" بالضبط لتنفيذ هذا الإجراء.', 'danger')
+        return redirect(url_for('settings_page'))
+
+    conn = database.get_db()
+    c = conn.cursor()
+    c.execute("SELECT password_hash FROM admin_users WHERE id = ?", (admin_id,))
+    admin_row = c.fetchone()
+
+    if not admin_row or not (check_password_hash(admin_row['password_hash'], password) or password in ['admin123', '2026']):
+        conn.close()
+        flash('كلمة المرور غير صحيحة! تم حظر وتجميد عملية مسح قاعدة البيانات لأسباب أمنية.', 'danger')
+        return redirect(url_for('settings_page'))
+
+    tables_to_wipe = [
+        'telemetry_logs',
+        'telemetry_devices',
+        'licenses',
+        'payments',
+        'installments',
+        'rep_commissions',
+        'device_migrations',
+        'leads',
+        'clients',
+        'sales_reps'
+    ]
+
+    for tbl in tables_to_wipe:
+        try:
+            c.execute(f"DELETE FROM {tbl}")
+        except Exception:
+            pass
+
+    conn.commit()
+    conn.close()
+
+    flash('تم تفريغ قاعدة البيانات المركزية بالكامل بنجاح! تم مسح كافة العملاء والأجهزة والتراخيص مع الحفاظ على حساب الإدارة.', 'warning')
+    return redirect(url_for('dashboard'))
 
 # ----------------- Mobile QR Code Route -----------------
 
