@@ -40,6 +40,68 @@
     </div>
 </div>
 
+
+<!-- Landing Page Traffic & Conversion Funnel -->
+<div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden" style="background: linear-gradient(135deg, #152238 0%, #1e3355 100%); color: white;">
+    <div class="card-body p-4">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3 pb-3 border-bottom border-white border-opacity-10">
+            <div>
+                <h5 class="fw-bold mb-1 text-white d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-chart-line text-warning"></i>
+                    <span>مؤشرات أداء وزوار صفحة الهبوط (Marketing & Download Funnel)</span>
+                </h5>
+                <p class="text-white-50 small mb-0">مراقبة حية ودقيقة لكل من زار الصفحة، نقر على تحميل البرنامج، أو قام بتشغيله فعلياً بالمكتب.</p>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ url_for('radar_dashboard') }}" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">
+                    <i class="fa-solid fa-satellite-dish me-1"></i> فتح رادار الأجهزة المتصلة
+                </a>
+                <a href="/" target="_blank" class="btn btn-outline-light btn-sm rounded-pill px-3">
+                    <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> صفحة الهبوط ↗
+                </a>
+            </div>
+        </div>
+
+        <div class="row g-3 text-center">
+            <!-- Metric 1: Total Views -->
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded-3 bg-white bg-opacity-10 border border-white border-opacity-10 h-100">
+                    <div class="text-white-50 small fw-bold mb-1"><i class="fa-solid fa-eye me-1 text-info"></i> إجمالي الزيارات</div>
+                    <div class="fs-2 fw-black text-white">{{ metrics.landing_views|default(0) }}</div>
+                    <div class="small text-white-50 mt-1">مشاهدات صفحة الهبوط</div>
+                </div>
+            </div>
+
+            <!-- Metric 2: Unique Visitors -->
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded-3 bg-white bg-opacity-10 border border-white border-opacity-10 h-100">
+                    <div class="text-white-50 small fw-bold mb-1"><i class="fa-solid fa-users me-1 text-warning"></i> الزوار الحقيقيين</div>
+                    <div class="fs-2 fw-black text-warning">{{ metrics.landing_unique|default(0) }}</div>
+                    <div class="small text-white-50 mt-1">أجهزة فريدة (Unique IPs)</div>
+                </div>
+            </div>
+
+            <!-- Metric 3: Download Clicks -->
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded-3 bg-white bg-opacity-10 border border-white border-opacity-10 h-100">
+                    <div class="text-white-50 small fw-bold mb-1"><i class="fa-solid fa-cloud-arrow-down me-1 text-success"></i> نقرات التحميل</div>
+                    <div class="fs-2 fw-black text-success">{{ metrics.landing_downloads|default(0) }}</div>
+                    <div class="small text-white-50 mt-1">حمّلوا ملف البرنامج</div>
+                </div>
+            </div>
+
+            <!-- Metric 4: Conversion Rate -->
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded-3 bg-white bg-opacity-10 border border-white border-opacity-10 h-100">
+                    <div class="text-white-50 small fw-bold mb-1"><i class="fa-solid fa-bullseye me-1 text-danger"></i> معدل التحويل (CR)</div>
+                    <div class="fs-2 fw-black text-info">{{ metrics.landing_conversion|default(0.0) }}%</div>
+                    <div class="small text-white-50 mt-1">نسبة المهتمين بالتحميل</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- KPI Cards (Clickable to Filter) -->
 <div class="row g-3 mb-4">
     <!-- Card 1: Total Clients -->
