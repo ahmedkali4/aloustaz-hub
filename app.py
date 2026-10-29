@@ -135,9 +135,15 @@ def logout():
     flash('تم تسجيل الخروج بنجاح.', 'info')
     return redirect(url_for('login'))
 
-# ----------------- Dashboard Route -----------------
+# ----------------- Public Landing Page & Dashboard Routes -----------------
 
 @app.route('/')
+def home():
+    if 'vendor_admin_id' in session:
+        return redirect(url_for('dashboard'))
+    return render_template('landing.html')
+
+@app.route('/dashboard')
 @login_required
 def dashboard():
     conn = database.get_db()
