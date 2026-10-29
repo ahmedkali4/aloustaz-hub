@@ -1,5 +1,46 @@
 {% extends "base.html" %}
-{% block title %}ملف العميل - {{ client.firm_name }}{% endblock %}
+{% block title %}ملف العميل - {{ client.firm_name }}
+<!-- Delete Client Confirmation Modal with Password -->
+<div class="modal fade" id="deleteClientModal" tabindex="-1" aria-labelledby="deleteClientModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4 overflow-hidden">
+            <div class="modal-header bg-danger text-white py-3">
+                <h5 class="modal-title fw-bold" id="deleteClientModalLabel">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i> تأكيد حذف العميل نهائياً
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('delete_client', id=client.id) }}">
+                <div class="modal-body p-4">
+                    <div class="alert alert-danger bg-danger bg-opacity-10 border-danger border-opacity-25 text-danger d-flex align-items-start gap-2 mb-3">
+                        <i class="fa-solid fa-circle-exclamation fs-4 mt-1"></i>
+                        <div class="small">
+                            <strong>تحذير أمني هام:</strong>
+                            أنت على وشك حذف ملف العميل <strong>({{ client.full_name }} - {{ client.firm_name }})</strong>.
+                            سيؤدي هذا إلى مسح كافة سجلات الدفع والتراخيص الصادرة له نهائياً ولا يمكن التراجع عن هذا الإجراء!
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-dark">
+                            <i class="fa-solid fa-lock text-danger me-1"></i> أدخل كلمة مرور الإدارة لتأكيد الحذف:
+                        </label>
+                        <input type="password" name="admin_password" class="form-control form-control-lg border-danger border-opacity-50" placeholder="كلمة مرور المشرف..." required autocomplete="current-password">
+                        <div class="form-text text-muted small">لن يتم تنفيذ الحذف إلا بعد مطابقة كلمة مرور حساب الإدارة الخاص بك.</div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">إلغاء وتراجع</button>
+                    <button type="submit" class="btn btn-danger px-4 fw-bold shadow-sm">
+                        <i class="fa-solid fa-trash-can me-1"></i> نعم، حذف العميل نهائياً
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
 
 {% block content %}
 <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
@@ -47,6 +88,9 @@
         <a href="{{ url_for('generate_license', client_id=client.id) }}" class="btn btn-gold btn-sm d-flex align-items-center gap-1 shadow-sm px-3">
             <i class="fa-solid fa-key"></i> إصدار كود جديد 🔑
         </a>
+        <button type="button" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1 shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#deleteClientModal">
+            <i class="fa-solid fa-trash-can"></i> حذف العميل
+        </button>
         <a href="{{ url_for('clients_list') }}" class="btn btn-outline-secondary btn-sm">
             <i class="fa-solid fa-arrow-right me-1"></i> العودة للقائمة
         </a>
@@ -613,6 +657,47 @@
         </div>
     </div>
 </div>
+
+<!-- Delete Client Confirmation Modal with Password -->
+<div class="modal fade" id="deleteClientModal" tabindex="-1" aria-labelledby="deleteClientModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4 overflow-hidden">
+            <div class="modal-header bg-danger text-white py-3">
+                <h5 class="modal-title fw-bold" id="deleteClientModalLabel">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i> تأكيد حذف العميل نهائياً
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('delete_client', id=client.id) }}">
+                <div class="modal-body p-4">
+                    <div class="alert alert-danger bg-danger bg-opacity-10 border-danger border-opacity-25 text-danger d-flex align-items-start gap-2 mb-3">
+                        <i class="fa-solid fa-circle-exclamation fs-4 mt-1"></i>
+                        <div class="small">
+                            <strong>تحذير أمني هام:</strong>
+                            أنت على وشك حذف ملف العميل <strong>({{ client.full_name }} - {{ client.firm_name }})</strong>.
+                            سيؤدي هذا إلى مسح كافة سجلات الدفع والتراخيص الصادرة له نهائياً ولا يمكن التراجع عن هذا الإجراء!
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-dark">
+                            <i class="fa-solid fa-lock text-danger me-1"></i> أدخل كلمة مرور الإدارة لتأكيد الحذف:
+                        </label>
+                        <input type="password" name="admin_password" class="form-control form-control-lg border-danger border-opacity-50" placeholder="كلمة مرور المشرف..." required autocomplete="current-password">
+                        <div class="form-text text-muted small">لن يتم تنفيذ الحذف إلا بعد مطابقة كلمة مرور حساب الإدارة الخاص بك.</div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">إلغاء وتراجع</button>
+                    <button type="submit" class="btn btn-danger px-4 fw-bold shadow-sm">
+                        <i class="fa-solid fa-trash-can me-1"></i> نعم، حذف العميل نهائياً
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -640,4 +725,45 @@ function openSettleModal(referredClientId, referredClientName, rewardAmount) {
     new bootstrap.Modal(document.getElementById('settleRewardModal')).show();
 }
 </script>
+
+<!-- Delete Client Confirmation Modal with Password -->
+<div class="modal fade" id="deleteClientModal" tabindex="-1" aria-labelledby="deleteClientModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4 overflow-hidden">
+            <div class="modal-header bg-danger text-white py-3">
+                <h5 class="modal-title fw-bold" id="deleteClientModalLabel">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i> تأكيد حذف العميل نهائياً
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('delete_client', id=client.id) }}">
+                <div class="modal-body p-4">
+                    <div class="alert alert-danger bg-danger bg-opacity-10 border-danger border-opacity-25 text-danger d-flex align-items-start gap-2 mb-3">
+                        <i class="fa-solid fa-circle-exclamation fs-4 mt-1"></i>
+                        <div class="small">
+                            <strong>تحذير أمني هام:</strong>
+                            أنت على وشك حذف ملف العميل <strong>({{ client.full_name }} - {{ client.firm_name }})</strong>.
+                            سيؤدي هذا إلى مسح كافة سجلات الدفع والتراخيص الصادرة له نهائياً ولا يمكن التراجع عن هذا الإجراء!
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-dark">
+                            <i class="fa-solid fa-lock text-danger me-1"></i> أدخل كلمة مرور الإدارة لتأكيد الحذف:
+                        </label>
+                        <input type="password" name="admin_password" class="form-control form-control-lg border-danger border-opacity-50" placeholder="كلمة مرور المشرف..." required autocomplete="current-password">
+                        <div class="form-text text-muted small">لن يتم تنفيذ الحذف إلا بعد مطابقة كلمة مرور حساب الإدارة الخاص بك.</div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">إلغاء وتراجع</button>
+                    <button type="submit" class="btn btn-danger px-4 fw-bold shadow-sm">
+                        <i class="fa-solid fa-trash-can me-1"></i> نعم، حذف العميل نهائياً
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {% endblock %}

@@ -41,6 +41,76 @@
                 </form>
             </div>
         </div>
+
+        <!-- Danger Zone Card -->
+        <div class="card border border-2 border-danger border-opacity-50 shadow-sm rounded-3 bg-white overflow-hidden mt-4">
+            <div class="card-header bg-danger text-white py-3 d-flex align-items-center justify-content-between">
+                <h5 class="fw-bold mb-0"><i class="fa-solid fa-triangle-exclamation me-2"></i> منطقة العمليات الحرجة (Danger Zone)</h5>
+                <span class="badge bg-white text-danger fw-bold">إجراء مشدد</span>
+            </div>
+            <div class="card-body p-4">
+                <h6 class="fw-bold text-danger mb-2">تفريغ وإعادة ضبط قاعدة البيانات بالكامل (Database Factory Reset)</h6>
+                <p class="text-muted small mb-3">
+                    سيؤدي هذا الإجراء إلى مسح وتصفير كافة سجلات المكاتب، العملاء، التراخيص، الأجهزة المسجلة، الأقساط، وسجلات المبيعات والرادار نهائياً.
+                    <strong>ملاحظة:</strong> سيتم الحفاظ على حساب المدير (اسم المستخدم وكلمة المرور) حتى لا تفقد إمكانية الدخول.
+                </p>
+                <div class="d-flex flex-wrap justify-content-between align-items-center bg-danger bg-opacity-10 p-3 rounded-3 border border-danger border-opacity-25 gap-2">
+                    <div>
+                        <div class="fw-bold text-danger small">هل تريد البدء من الصفر تماماً وتفريغ كل الجداول؟</div>
+                        <div class="text-muted" style="font-size: 0.8rem;">يتطلب كلمة مرور المشرف وكتابة عبارة تأكيد صريحة لحماية البيانات من الحذف الخاطئ.</div>
+                    </div>
+                    <button type="button" class="btn btn-danger btn-sm px-3 fw-bold" data-bs-toggle="modal" data-bs-target="#wipeDatabaseModal">
+                        <i class="fa-solid fa-trash-can me-1"></i> تفريغ الداتابيز بالكامل
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Wipe Database Modal with Strict Security -->
+<div class="modal fade" id="wipeDatabaseModal" tabindex="-1" aria-labelledby="wipeDatabaseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-danger text-white py-3">
+                <h5 class="modal-title fw-bold" id="wipeDatabaseModalLabel">
+                    <i class="fa-solid fa-radiation me-2"></i> تأكيد تفريغ قاعدة البيانات بالكامل
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('wipe_database') }}">
+                <div class="modal-body p-4">
+                    <div class="alert alert-danger d-flex align-items-start gap-2 mb-3">
+                        <i class="fa-solid fa-triangle-exclamation fs-3 mt-1"></i>
+                        <div class="small">
+                            <strong class="d-block mb-1 fs-6">تحذير أمني شديد الخطورة:</strong>
+                            هذا الإجراء نهائي ولا رجعة فيه! سيقوم بمسح كافة المكاتب، العملاء، التراخيص، الأجهزة، والمدفوعات من قاعدة البيانات السحابية المركزية فوراً!
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-dark">
+                            1. كلمة مرور حساب المشرف:
+                        </label>
+                        <input type="password" name="admin_password" class="form-control form-control-lg border-danger" placeholder="أدخل كلمة المرور للتأكيد..." required autocomplete="current-password">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-dark">
+                            2. اكتب عبارة التأكيد <code class="text-danger fw-bold fs-6">مسح_الكل</code> للتأكيد:
+                        </label>
+                        <input type="text" name="confirmation_text" class="form-control font-monospace border-danger text-center fw-bold" placeholder="مسح_الكل" required autocomplete="off">
+                        <div class="form-text text-muted small">يجب كتابة الكلمة بالضبط كما هي لتفعيل زر المسح.</div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">إلغاء والعودة بأمان</button>
+                    <button type="submit" class="btn btn-danger px-4 fw-bold shadow-sm">
+                        <i class="fa-solid fa-trash-can me-1"></i> نعم، أفرغ قاعدة البيانات الآن
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 {% endblock %}

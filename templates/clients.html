@@ -1,5 +1,47 @@
 {% extends "base.html" %}
-{% block title %}سجل المكاتب والعملاء{% endblock %}
+{% block title %}سجل المكاتب والعملاء
+<!-- Delete Client Row Modal -->
+<div class="modal fade" id="deleteClientRowModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4 overflow-hidden">
+            <div class="modal-header bg-danger text-white py-3">
+                <h5 class="modal-title fw-bold">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i> تأكيد حذف العميل
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="deleteClientRowForm">
+                <div class="modal-body p-4">
+                    <p class="text-dark mb-3">
+                        هل أنت متأكد من حذف العميل <strong id="deleteTargetClientName" class="text-danger"></strong> وسجلاته وتراخيصه بالكامل؟
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-dark">
+                            <i class="fa-solid fa-lock text-danger me-1"></i> أدخل كلمة مرور المشرف للتأكيد:
+                        </label>
+                        <input type="password" name="admin_password" class="form-control" placeholder="كلمة المرور..." required>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-danger btn-sm px-4 fw-bold shadow-sm">
+                        <i class="fa-solid fa-trash-can me-1"></i> تأكيد الحذف
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openDeleteClientModal(id, name) {
+    document.getElementById('deleteTargetClientName').innerText = name;
+    document.getElementById('deleteClientRowForm').action = '/clients/' + id + '/delete';
+    new bootstrap.Modal(document.getElementById('deleteClientRowModal')).show();
+}
+</script>
+
+{% endblock %}
 
 {% block content %}
 <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
@@ -124,6 +166,9 @@
                                 <a href="{{ url_for('generate_license', client_id=c.id) }}" class="btn btn-outline-warning btn-sm py-1 px-2 text-dark" title="إصدار ترخيص جديد">
                                     <i class="fa-solid fa-key"></i>
                                 </a>
+                                <button type="button" class="btn btn-outline-danger btn-sm py-1 px-2" title="حذف العميل" onclick="openDeleteClientModal({{ c.id }}, '{{ c.full_name|replace("'", "") }}')">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -139,4 +184,46 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Delete Client Row Modal -->
+<div class="modal fade" id="deleteClientRowModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4 overflow-hidden">
+            <div class="modal-header bg-danger text-white py-3">
+                <h5 class="modal-title fw-bold">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i> تأكيد حذف العميل
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="deleteClientRowForm">
+                <div class="modal-body p-4">
+                    <p class="text-dark mb-3">
+                        هل أنت متأكد من حذف العميل <strong id="deleteTargetClientName" class="text-danger"></strong> وسجلاته وتراخيصه بالكامل؟
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-dark">
+                            <i class="fa-solid fa-lock text-danger me-1"></i> أدخل كلمة مرور المشرف للتأكيد:
+                        </label>
+                        <input type="password" name="admin_password" class="form-control" placeholder="كلمة المرور..." required>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-4 d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-danger btn-sm px-4 fw-bold shadow-sm">
+                        <i class="fa-solid fa-trash-can me-1"></i> تأكيد الحذف
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openDeleteClientModal(id, name) {
+    document.getElementById('deleteTargetClientName').innerText = name;
+    document.getElementById('deleteClientRowForm').action = '/clients/' + id + '/delete';
+    new bootstrap.Modal(document.getElementById('deleteClientRowModal')).show();
+}
+</script>
+
 {% endblock %}
