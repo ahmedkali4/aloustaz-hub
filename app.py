@@ -1285,8 +1285,8 @@ def telemetry_install():
             pass
 
     now_str = now_dt.strftime('%Y-%m-%d %H:%M:%S')
-    expires_str = (now_dt + timedelta(days=7)).strftime('%Y-%m-%d 23:59:59')
-    days_rem = max(1, int(((now_dt + timedelta(days=7)) - datetime.now()).total_seconds() / 86400.0 + 0.99))
+    expires_str = (now_dt + timedelta(days=30)).strftime('%Y-%m-%d 23:59:59')
+    days_rem = max(1, int(((now_dt + timedelta(days=30)) - datetime.now()).total_seconds() / 86400.0 + 0.99))
 
     conn = database.get_db()
     c = conn.cursor()
@@ -1347,7 +1347,7 @@ def telemetry_install():
         "trial_expires_at": expires_str,
         "server_time": now_str,
         "is_read_only": False,
-        "broadcast_message": "مرحباً بكم في منظومة الأستاذ لإدارة مكاتب المحاماة (الإصدار 2.0). فترتكم التجريبية سارية لمدة 7 أيام."
+        "broadcast_message": "مرحباً بكم في منظومة الأستاذ لإدارة مكاتب المحاماة (الإصدار 2.0). تم تفعيل عرض التدشين الرسمي: شهر كامل تجربة مجانية شاملة (30 يوماً)."
     })
 
 
@@ -1387,7 +1387,7 @@ def telemetry_heartbeat():
     if not device:
         initial_tier = client['current_edition'] if client else 'TRIAL'
         initial_status = 'ACTIVE' if client else 'TRIAL'
-        expires_str = (now_dt + timedelta(days=7)).strftime('%Y-%m-%d 23:59:59')
+        expires_str = (now_dt + timedelta(days=30)).strftime('%Y-%m-%d 23:59:59')
         firm_name = client['firm_name'] if client else 'مكتب محاماة'
         phone = client['phone'] if client else ''
 
@@ -1396,7 +1396,7 @@ def telemetry_heartbeat():
                 client_id, machine_id, firm_name, contact_phone, current_tier, reported_tier,
                 status, is_read_only, days_remaining, trial_started_at, trial_expires_at,
                 last_heartbeat, last_ip, app_version, notes
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 7, ?, ?, ?, ?, ?, 'تسجيل نبضة تلقائي')
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 30, ?, ?, ?, ?, ?, 'تسجيل نبضة تلقائي (عرض تدشين 30 يوم)')
         """, (client['id'] if client else None, machine_id, firm_name, phone, initial_tier, reported_tier, initial_status, now_str, expires_str, now_str, ip_addr, app_version))
         device_id = c.lastrowid
         c.execute("SELECT * FROM telemetry_devices WHERE id = ?", (device_id,))
@@ -1773,14 +1773,47 @@ def radar_dashboard():
     c.execute("SELECT COUNT(*) FROM telemetry_devices WHERE is_read_only = 1")
     read_only_count = c.fetchone()[0]
 
+    # Expired 30-day Free Trial (Needs outreach & conversion)
+    c.execute("""
+        SELECT COUNT(*) FROM telemetry_devices 
+        WHERE (status IN ('TRIAL', 'EXPIRED') OR current_tier = 'TRIAL')
+          AND (days_remaining <= 0 OR status = 'EXPIRED')
+    """)
+    expired_trials_count = c.fetchone()[0]
+
+    # Expiring Soon (Within 3 days)
+    c.execute("""
+        SELECT COUNT(*) FROM telemetry_devices 
+        WHERE status = 'TRIAL' AND days_remaining > 0 AND days_remaining <= 3
+    """)
+    expiring_soon_count = c.fetchone()[0]
+
+    # Version breakdown counters
+    c.execute("SELECT COUNT(*) FROM telemetry_devices WHERE (app_version = '1.0' OR app_version IS NULL OR app_version = '')")
+    v1_count = c.fetchone()[0]
+
+    c.execute("SELECT COUNT(*) FROM telemetry_devices WHERE app_version LIKE '2.%'")
+    v2_count = c.fetchone()[0]
+
+    version_filter = request.args.get('version', 'all')
+
     # Build query with filters
-    base_sql = "SELECT d.*, c.full_name as client_lawyer_name FROM telemetry_devices d LEFT JOIN clients c ON d.client_id = c.id WHERE 1=1"
+    base_sql = "SELECT d.*, c.full_name as client_lawyer_name, c.payment_model, c.total_price, c.remaining_amount, c.current_edition as client_edition FROM telemetry_devices d LEFT JOIN clients c ON d.client_id = c.id WHERE 1=1"
     params = []
 
+    if version_filter == '1.0':
+        base_sql += " AND (d.app_version = '1.0' OR d.app_version IS NULL OR d.app_version = '')"
+    elif version_filter == '2.0':
+        base_sql += " AND d.app_version LIKE '2.%'" 
+
     if filter_type == 'trials':
-        base_sql += " AND d.current_tier = 'TRIAL' AND d.status = 'TRIAL'"
+        base_sql += " AND d.current_tier = 'TRIAL' AND d.status = 'TRIAL' AND d.days_remaining > 0"
+    elif filter_type == 'expired_trial':
+        base_sql += " AND (d.status IN ('TRIAL', 'EXPIRED') OR d.current_tier = 'TRIAL') AND (d.days_remaining <= 0 OR d.status = 'EXPIRED')"
+    elif filter_type == 'expiring_soon':
+        base_sql += " AND d.status = 'TRIAL' AND d.days_remaining > 0 AND d.days_remaining <= 3"
     elif filter_type == 'paid':
-        base_sql += " AND d.current_tier IN ('STARTER', 'LITE', 'FULL')"
+        base_sql += " AND d.current_tier IN ('STARTER', 'LITE', 'FULL') AND d.status = 'ACTIVE'"
     elif filter_type == 'tamper':
         base_sql += " AND ((d.tamper_flags IS NOT NULL AND d.tamper_flags != '' AND d.tamper_flags != 'NONE') OR d.status IN ('LOCKED', 'REVOKED'))"
     elif filter_type == 'locked':
@@ -1799,13 +1832,23 @@ def radar_dashboard():
 
     conn.close()
 
+    devices_v1 = [d for d in devices if (d.get('app_version') in ['1.0', None, ''] or not str(d.get('app_version')).startswith('2.'))]
+    devices_v2 = [d for d in devices if str(d.get('app_version', '')).startswith('2.')]
+
     return render_template('radar.html',
                            devices=devices,
+                           devices_v1=devices_v1,
+                           devices_v2=devices_v2,
+                           v1_count=v1_count,
+                           v2_count=v2_count,
+                           version_filter=version_filter,
                            total_devices=total_devices,
                            active_trials=active_trials,
                            paid_active=paid_active,
                            tamper_alerts=tamper_alerts,
                            read_only_count=read_only_count,
+                           expired_trials_count=expired_trials_count,
+                           expiring_soon_count=expiring_soon_count,
                            filter_type=filter_type,
                            search_q=search_q)
 
