@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منظومة الأستاذ لإدارة مكاتب المحاماة والاستشارات القانونية</title>
+    <!-- Bootstrap 5 RTL -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css">
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Cairo Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#0d1b2a">
+
+    <style>
+        :root {
+            --primary-navy: #0d1b2a;
+            --accent-gold: #c5a059;
+            --gold-hover: #b08d46;
+            --soft-bg: #f8fafc;
+            --text-dark: #1e293b;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: var(--soft-bg);
+            color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        .bg-navy { background-color: var(--primary-navy) !important; }
+        .text-gold { color: var(--accent-gold) !important; }
+        
+        .btn-gold {
+            background: linear-gradient(135deg, #c5a059 0%, #e0c27b 100%);
+            color: #0d1b2a;
+            font-weight: 700;
+            border: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(197, 160, 89, 0.3);
+        }
+        .btn-gold:hover {
+            background: linear-gradient(135deg, #b08d46 0%, #d4b568 100%);
+            color: #000;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(197, 160, 89, 0.45);
+        }
+
+        .btn-outline-gold {
+            border: 2px solid var(--accent-gold);
+            color: var(--accent-gold);
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-outline-gold:hover {
+            background-color: var(--accent-gold);
+            color: #0d1b2a;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            background: radial-gradient(circle at 80% 20%, #1b263b 0%, #0d1b2a 70%);
+            padding: 90px 0 110px 0;
+            position: relative;
+        }
+
+        .hero-badge {
+            background: rgba(197, 160, 89, 0.15);
+            border: 1px solid rgba(197, 160, 89, 0.4);
+            color: #ffd700;
+            font-size: 0.9rem;
+            padding: 6px 18px;
+            border-radius: 50px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .feature-card {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 30px 24px;
+            transition: all 0.3s ease;
+            border: 1px solid #e2e8f0;
+            height: 100%;
+        }
+        .feature-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 15px 35px rgba(13, 27, 42, 0.08);
+            border-color: var(--accent-gold);
+        }
+
+        .icon-box {
+            width: 65px;
+            height: 65px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+        }
+
+        .pricing-card {
+            background: #ffffff;
+            border-radius: 20px;
+            border: 1px solid #e2e8f0;
+            padding: 35px 25px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .pricing-card.featured {
+            border: 2px solid var(--accent-gold);
+            box-shadow: 0 15px 40px rgba(197, 160, 89, 0.2);
+            transform: scale(1.03);
+        }
+
+        .floating-wa {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            background: #25d366;
+            color: #ffffff;
+            width: 62px;
+            height: 62px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            box-shadow: 0 6px 20px rgba(37, 211, 102, 0.45);
+            z-index: 9999;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        .floating-wa:hover {
+            transform: scale(1.1) rotate(10deg);
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- WhatsApp Floating Button -->
+    <a href="https://wa.me/201550597688?text=السلام%20عليكم،%20أرغب%20في%20الاستفسار%20عن%20منظومة%20الأستاذ%20لإدارة%20مكاتب%20المحاماة" target="_blank" class="floating-wa shadow" title="تحدث معنا على واتساب">
+        <i class="fa-brands fa-whatsapp"></i>
+    </a>
+
+    <!-- Top Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-navy sticky-top py-3 border-bottom border-dark border-opacity-25 shadow-sm">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+                <span class="fs-3 text-gold">⚖️</span>
+                <span class="fw-bold fs-4 text-white">منظومة <span class="text-gold">الأستاذ</span></span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navMenu">
+                <ul class="navbar-nav mx-auto mb-2 mb-lg-0 gap-lg-3">
+                    <li class="nav-item"><a class="nav-link text-white fw-semibold" href="#features">المميزات</a></li>
+                    <li class="nav-item"><a class="nav-link text-white fw-semibold" href="#preview">واجهات البرنامج</a></li>
+                    <li class="nav-item"><a class="nav-link text-white fw-semibold" href="#pricing">الباقات والتراخيص</a></li>
+                    <li class="nav-item"><a class="nav-link text-white fw-semibold" href="#faq">الأسئلة الشائعة</a></li>
+                </ul>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="#download" class="btn btn-gold btn-sm px-3 py-2 rounded-pill">
+                        <i class="fa-solid fa-download me-1"></i> تحميل التجربة مجاناً
+                    </a>
+                    <a href="/login" class="btn btn-outline-light btn-sm px-3 py-2 rounded-pill" title="دخول الإدارة">
+                        <i class="fa-solid fa-lock me-1"></i> دخول الإدارة
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="hero-section text-white text-center text-lg-start">
+        <div class="container">
+            <div class="row align-items-center gy-5">
+                <div class="col-lg-7">
+                    <div class="hero-badge mb-3">
+                        <i class="fa-solid fa-certificate"></i> الإصدار الميداني الرسمي 2026
+                    </div>
+                    <h1 class="display-5 fw-black lh-base mb-4">
+                        المنظومة الرقمية المتكاملة لإدارة <span class="text-gold">مكاتب المحاماة</span> باحترافية وأمان تام
+                    </h1>
+                    <p class="lead text-light opacity-75 mb-5 fs-5">
+                        وداعاً لسقوط مواعيد الجلسات أو ضياع أوراق القضايا والأتعاب. نظّم ملفات مكتبك، اطبع رول جلسات المحاكم بضغطة زر، ودع موكليك يتابعون قضاياهم بباركود ذكي.. <strong>بدون الحاجة لإنترنت دائم</strong>.
+                    </p>
+                    <div class="d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start">
+                        <a href="#download" class="btn btn-gold btn-lg px-4 py-3 rounded-pill fs-6 shadow">
+                            <i class="fa-solid fa-cloud-arrow-down me-2"></i> تحميل النسخة التجريبية (مجاناً 7 أيام)
+                        </a>
+                        <a href="https://wa.me/201550597688?text=مرحباً،%20أريد%20طلب%20عرض%20سعر%20لمكتب%20المحاماة" target="_blank" class="btn btn-outline-gold btn-lg px-4 py-3 rounded-pill fs-6">
+                            <i class="fa-brands fa-whatsapp me-2"></i> تواصل مع مستشار المبيعات
+                        </a>
+                    </div>
+                    <div class="mt-4 pt-2 d-flex flex-wrap gap-4 text-white-50 small justify-content-center justify-content-lg-start">
+                        <span><i class="fa-solid fa-check-circle text-gold me-1"></i> تجربة مجانية بكامل المميزات</span>
+                        <span><i class="fa-solid fa-shield-halved text-gold me-1"></i> خصوصية وتشفير محلي للبيانات</span>
+                        <span><i class="fa-solid fa-wifi-slash text-gold me-1"></i> تعمل أوفلاين 100%</span>
+                    </div>
+                </div>
+                <div class="col-lg-5 text-center">
+                    <div class="position-relative p-2 bg-white bg-opacity-10 rounded-4 shadow-lg border border-white border-opacity-20">
+                        <div class="bg-navy p-4 rounded-3 text-start">
+                            <div class="d-flex align-items-center justify-content-between mb-3 border-bottom border-secondary pb-3">
+                                <span class="text-gold fw-bold"><i class="fa-solid fa-scale-balanced me-2"></i>منظومة الأستاذ - لوحة التحكم</span>
+                                <span class="badge bg-success">نشط 2026</span>
+                            </div>
+                            <div class="mb-3 p-3 bg-dark bg-opacity-50 rounded border border-secondary border-opacity-25">
+                                <div class="text-white-50 small mb-1">جلسات الغد بالمحاكم:</div>
+                                <div class="fw-bold text-white fs-6"><i class="fa-solid fa-calendar-check text-gold me-2"></i>6 جلسات جاهزة للطباعة بالرول</div>
+                            </div>
+                            <div class="mb-3 p-3 bg-dark bg-opacity-50 rounded border border-secondary border-opacity-25">
+                                <div class="text-white-50 small mb-1">بوابة الموكل الإلكترونية:</div>
+                                <div class="fw-bold text-white fs-6"><i class="fa-solid fa-qrcode text-info me-2"></i>باركود تتبع القضايا مفعل بالهاتف</div>
+                            </div>
+                            <div class="text-center pt-2">
+                                <span class="badge bg-warning text-dark px-3 py-2"><i class="fa-solid fa-crown me-1"></i> ترخيص دائم مدى الحياة للمكتب</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Key Features Section -->
+    <section id="features" class="py-5 my-4">
+        <div class="container py-4">
+            <div class="text-center max-w-700 mx-auto mb-5">
+                <span class="badge bg-warning bg-opacity-10 text-dark fw-bold px-3 py-2 rounded-pill mb-2">مميزات صُممت خصيصاً للمحامي المصري</span>
+                <h2 class="display-6 fw-bold text-navy mt-2">كل ما يحتاجه مكتبك في منصة واحدة ذكية</h2>
+                <p class="text-muted fs-5">تخلص من فوضى الأوراق والأجندات الجلدية، وتحكم في مكتبك وقضاياك بدقة رقمية متناهية</p>
+            </div>
+
+            <div class="row g-4">
+                <!-- Feature 1 -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card shadow-sm">
+                        <div class="icon-box bg-primary bg-opacity-10 text-primary">
+                            <i class="fa-solid fa-calendar-days"></i>
+                        </div>
+                        <h4 class="fw-bold text-navy mb-3">أجندة الجلسات والرول اليومي</h4>
+                        <p class="text-muted">جدول إلكتروني ذكي لكافة الجلسات بمختلف المحاكم والدوائر، مع طباعة رول الجلسات اليومي بضغطة زر وتنبيهات مواعيد الاستئناف والنقض.</p>
+                    </div>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card shadow-sm">
+                        <div class="icon-box bg-warning bg-opacity-10 text-warning">
+                            <i class="fa-solid fa-folder-tree"></i>
+                        </div>
+                        <h4 class="fw-bold text-navy mb-3">أرشفة القضايا والمستندات</h4>
+                        <p class="text-muted">ملف رقمي شامل لكل قضية يحتوي على صحيفة الدعوى، مذكرات الدفاع، الأحكام، وتوكيلات الموكلين بدون خوف من تلف أو فقدان الأوراق.</p>
+                    </div>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card shadow-sm">
+                        <div class="icon-box bg-success bg-opacity-10 text-success">
+                            <i class="fa-solid fa-hand-holding-dollar"></i>
+                        </div>
+                        <h4 class="fw-bold text-navy mb-3">إدارة الأتعاب والمالية</h4>
+                        <p class="text-muted">متابعة دقيقة لأتعاب القضايا، الأقساط المسددة، المبالغ المتبقية، وسندات الصرف والقبض، مع تقارير مالية وافية لأرباح المكتب.</p>
+                    </div>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card shadow-sm">
+                        <div class="icon-box bg-info bg-opacity-10 text-info">
+                            <i class="fa-solid fa-qrcode"></i>
+                        </div>
+                        <h4 class="fw-bold text-navy mb-3">بوابة الموكل الإلكترونية (QR Portal)</h4>
+                        <p class="text-muted">اطبع باركود فريد على ملف القضية، ليمسحه الموكل بكاميرا هاتفه في أي وقت ويتابع تطورات قضيته دون الحاجة للاتصال بك يومياً.</p>
+                    </div>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card shadow-sm">
+                        <div class="icon-box bg-danger bg-opacity-10 text-danger">
+                            <i class="fa-solid fa-users-gear"></i>
+                        </div>
+                        <h4 class="fw-bold text-navy mb-3">إدارة فريق العمل والمحامين</h4>
+                        <p class="text-muted">توزيع مهام الجلسات والتحقيقات على المحامين المعاونين والمتدربين، مع نظام صلاحيات يضمن سرية قضاياك وحساباتك.</p>
+                    </div>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card shadow-sm">
+                        <div class="icon-box bg-secondary bg-opacity-10 text-dark">
+                            <i class="fa-solid fa-lock"></i>
+                        </div>
+                        <h4 class="fw-bold text-navy mb-3">أمان تام بدون إنترنت (Offline-First)</h4>
+                        <p class="text-muted">بيانات قضاياك وأسرار موكليك مخزنة محلياً على جهازك بتشفير مصرفي، وتعمل المنظومة بكامل كفاءتها حتى مع انقطاع الإنترنت.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing / Editions Section -->
+    <section id="pricing" class="py-5 bg-white border-top border-bottom">
+        <div class="container py-4">
+            <div class="text-center max-w-700 mx-auto mb-5">
+                <span class="badge bg-gold text-dark fw-bold px-3 py-2 rounded-pill mb-2">تراخيص دائمة بدون اشتراكات إجبارية</span>
+                <h2 class="display-6 fw-bold text-navy mt-2">اختر الباقة المناسبة لحجم مكتبك</h2>
+                <p class="text-muted fs-5">ادفع مرة واحدة وامتلك نسختك المرخصة مدى الحياة لجهازك مع دعم فني مستمر</p>
+            </div>
+
+            <div class="row g-4 align-items-center">
+                <!-- Lite Edition -->
+                <div class="col-lg-4">
+                    <div class="pricing-card text-center">
+                        <h4 class="fw-bold text-navy mb-2">الباقة الاقتصادية (Lite)</h4>
+                        <p class="text-muted small">مثالية للمحامي المستقل والمبتدئ</p>
+                        <hr class="my-4">
+                        <ul class="list-unstyled text-start d-flex flex-column gap-3 mb-4 pe-3">
+                            <li><i class="fa-solid fa-check text-success me-2"></i> حتى 100 قضية نشطة</li>
+                            <li><i class="fa-solid fa-check text-success me-2"></i> أجندة الجلسات والرول اليومي</li>
+                            <li><i class="fa-solid fa-check text-success me-2"></i> إدارة الأتعاب وسندات القبض</li>
+                            <li><i class="fa-solid fa-check text-success me-2"></i> ترخيص دائم مدى الحياة لجهاز واحد</li>
+                            <li class="text-muted"><i class="fa-solid fa-xmark text-danger me-2"></i> إدارة المحامين المتدربين</li>
+                        </ul>
+                        <a href="https://wa.me/201550597688?text=استفسار%20عن%20سعر%20باقة%20Lite" target="_blank" class="btn btn-outline-dark w-100 py-2 rounded-pill fw-bold">استفسر عن السعر</a>
+                    </div>
+                </div>
+
+                <!-- Starter Edition (Featured) -->
+                <div class="col-lg-4">
+                    <div class="pricing-card featured text-center">
+                        <div class="position-absolute top-0 start-50 translate-middle">
+                            <span class="badge bg-gold text-dark px-3 py-2 rounded-pill fw-bold shadow-sm">الأكثر طلباً للمكاتب</span>
+                        </div>
+                        <h4 class="fw-bold text-navy mb-2 mt-2">باقة الانطلاق (Starter)</h4>
+                        <p class="text-muted small">للمكاتب النشطة والمحامين الشركاء</p>
+                        <hr class="my-4">
+                        <ul class="list-unstyled text-start d-flex flex-column gap-3 mb-4 pe-3">
+                            <li><i class="fa-solid fa-check text-success me-2"></i> إدارة قضايا متعددة وموكلين</li>
+                            <li><i class="fa-solid fa-check text-success me-2"></i> فريق عمل (حتى 4 محامين معاونين)</li>
+                            <li><i class="fa-solid fa-check text-success me-2"></i> بوابة تتبع الموكلين عبر الباركود QR</li>
+                            <li><i class="fa-solid fa-check text-success me-2"></i> توزيع مهام المحاكم والجلسات</li>
+                            <li><i class="fa-solid fa-check text-success me-2"></i> دعم فني وتدريب مجاني عبر واتساب</li>
+                        </ul>
+                        <a href="https://wa.me/201550597688?text=أرغب%20في%20شراء%20باقة%20Starter" target="_blank" class="btn btn-gold w-100 py-2 rounded-pill fw-bold shadow">احصل على العرض الخاص</a>
+                    </div>
+                </div>
+
+                <!-- Pro Edition -->
+                <div class="col-lg-4">
+                    <div class="pricing-card text-center">
+                        <h4 class="fw-bold text-navy mb-2">النسخة الكاملة (Pro Enterprise)</h4>
+                        <p class="text-muted small">لكبرى شركات المحاماة والاستشارات</p>
+                        <hr class="my-4">
+                        <ul class="list-unstyled text-start d-flex flex-column gap-3 mb-4 pe-3">
+                            <li><i class="fa-solid fa-check text-success me-2"></i> <strong>عدد غير محدود</strong> من القضايا والموكلين</li>
+                            <li><i class="fa-solid fa-check text-success me-2"></i> عدد غير محدود من المحامين والموظفين</li>
+                            <li><i class="fa-solid fa-check text-success me-2"></i> واجهة متقدمة ثنائية اللغة (عربي / إنجليزي)</li>
+                            <li><i class="fa-solid fa-check text-success me-2"></i> تقارير ضريبية ومالية متقدمة</li>
+                            <li><i class="fa-solid fa-check text-success me-2"></i> أولوية دعم فني مباشر 24/7</li>
+                        </ul>
+                        <a href="https://wa.me/201550597688?text=طلب%20تفاصيل%20النسخة%20Pro%20Enterprise" target="_blank" class="btn btn-outline-dark w-100 py-2 rounded-pill fw-bold">تواصل للمكاتب الكبرى</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download Section -->
+    <section id="download" class="py-5 bg-navy text-white text-center">
+        <div class="container py-4">
+            <div class="max-w-700 mx-auto">
+                <span class="badge bg-gold text-dark fw-bold px-3 py-2 rounded-pill mb-3">ابدأ الآن بدون أي بطاقة بنكية</span>
+                <h2 class="display-5 fw-bold mb-3">حمّل نسختك التجريبية المجانية فوراً</h2>
+                <p class="text-light opacity-75 fs-5 mb-4">
+                    الملف جاهز للتشغيل المباشر على أي جهاز كمبيوتر أو لابتوب يعمل بنظام ويندوز. فك الضغط وابدأ بتنظيم مكتبك في دقيقة واحدة.
+                </p>
+                <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
+                    <a href="https://aloustaz-hub.vercel.app/static/vendor_qr.png" download="Al_Oustaz_v1.0" class="btn btn-gold btn-lg px-5 py-3 rounded-pill fw-bold fs-5 shadow">
+                        <i class="fa-solid fa-download me-2"></i> تحميل البرنامج (إصدار 1.0 الرسمي)
+                    </a>
+                </div>
+                <div class="mt-4 text-white-50 small">
+                    متوافق مع أنظمة: Windows 10 / Windows 11 (64-bit) | حجم الملف: حوالي 38 ميجابايت فقط
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Accordion -->
+    <section id="faq" class="py-5 my-4">
+        <div class="container py-4 max-w-800 mx-auto">
+            <div class="text-center mb-5">
+                <h2 class="display-6 fw-bold text-navy">الأسئلة الشائعة</h2>
+                <p class="text-muted">كل ما تود معرفته عن منظومة الأستاذ للمحاماة</p>
+            </div>
+
+            <div class="accordion shadow-sm rounded-4 overflow-hidden" id="faqAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                            هل يحتاج البرنامج إلى إنترنت دائم أثناء العمل اليومي؟
+                        </button>
+                    </h2>
+                    <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body text-muted">
+                            <strong>إطلاقاً!</strong> صُمم برنامج الأستاذ ليعمل محلياً (Offline-First) بالكامل على جهازك أو لابتوبك في المكتب أو المحكمة دون الحاجة لوجود اتصال إنترنت، مما يضمن أقصى سرعة واستمرارية للعمل.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                            هل بيانات قضايا وموكلي المكتب بأمان وخصوصية تامة؟
+                        </button>
+                    </h2>
+                    <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body text-muted">
+                            نعم بنسبة 100%. قاعدة البيانات مشفرة ومخزنة داخل جهاز الكمبيوتر الخاص بك، ولا يمكن لأي طرف خارجي الاطلاع على أسماء موكليك أو تفاصيل قضاياك.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                            كيف أحصل على مفتاح التفعيل الدائم بعد انتهاء الـ 7 أيام التجريبية؟
+                        </button>
+                    </h2>
+                    <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body text-muted">
+                            ستجد كود جهازك (Machine ID) ظاهراً في شاشة البرنامج، كل ما عليك هو إرساله لفريق المبيعات على واتساب، وسيتم إصدار مفتاح التفعيل الدائم الخاص بمكتبك فوراً.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-navy text-white py-4 border-top border-dark border-opacity-50">
+        <div class="container text-center">
+            <div class="mb-3">
+                <span class="fs-4 text-gold">⚖️</span>
+                <span class="fw-bold fs-5 text-white">منظومة الأستاذ لإدارة مكاتب المحاماة</span>
+            </div>
+            <p class="text-white-50 small mb-2">جميع الحقوق محفوظة © 2026 - المطور والمالك: Ahmed Mabrouk</p>
+            <div class="text-white-50 small">
+                للدعم الفني والاستفسارات: <a href="tel:01550597688" class="text-gold text-decoration-none">01550597688</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
