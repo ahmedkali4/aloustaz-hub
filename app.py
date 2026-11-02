@@ -166,14 +166,15 @@ def _push_landing_event(event_type: str, ip: str, ua: str, ref: str):
         pass
 
 @app.route('/')
+@app.route('/landing')
 def home():
-    if 'vendor_admin_id' in session:
-        return redirect(url_for('dashboard'))
     try:
         ip = request.headers.get('CF-Connecting-IP') or request.headers.get('X-Forwarded-For', '').split(',')[0].strip() or request.remote_addr or '127.0.0.1'
         ua = request.headers.get('User-Agent', '')[:250]
         ref = request.headers.get('Referer', '')[:250]
-        _push_landing_event('PAGE_VIEW', ip, ua, ref)
+        # Only track marketing analytics if not an admin viewing the page
+        if 'vendor_admin_id' not in session:
+            _push_landing_event('PAGE_VIEW', ip, ua, ref)
     except Exception:
         pass
 
@@ -1389,12 +1390,21 @@ def telemetry_install():
         """, (client_id, machine_id, firm_name, phone, initial_tier, initial_status, days_rem, now_str, expires_str, now_str, ip_addr, app_version))
         device_id = c.lastrowid
 
-        # Auto-create CRM Lead if not an existing client
+        # Auto-create CRM Lead if not an existing client (with deduplication per machine)
         if not existing_client:
-            c.execute("""
-                INSERT INTO leads (lawyer_name, phone, city, interested_edition, notes)
-                VALUES (?, ?, 'مصر', 'STARTER', ?)
-            """, (firm_name, phone or 'غير مسجل', f"عميل ديمو جديد (تثبيت تلقائي من البرنامج) - كود الجهاز: {machine_id}"))
+            c.execute("SELECT id FROM leads WHERE notes LIKE ?", (f"%{machine_id}%",))
+            existing_lead = c.fetchone()
+            if existing_lead:
+                c.execute("""
+                    UPDATE leads
+                    SET lawyer_name = ?, phone = ?
+                    WHERE id = ?
+                """, (firm_name, phone or 'غير مسجل', existing_lead['id']))
+            else:
+                c.execute("""
+                    INSERT INTO leads (lawyer_name, phone, city, interested_edition, notes)
+                    VALUES (?, ?, 'مصر', 'STARTER', ?)
+                """, (firm_name, phone or 'غير مسجل', f"عميل ديمو جديد (تثبيت تلقائي من البرنامج) - كود الجهاز: {machine_id}"))
 
     # Log in telemetry_logs
     c.execute("""
@@ -1452,7 +1462,7 @@ def telemetry_heartbeat():
     if not device:
         initial_tier = client['current_edition'] if client else 'TRIAL'
         initial_status = 'ACTIVE' if client else 'TRIAL'
-        expires_str = (now_dt + timedelta(days=30)).strftime('%Y-%m-%d 23:59:59')
+        expires_str = (now_dt + timedelta(days=7)).strftime('%Y-%m-%d 23:59:59')
         firm_name = client['firm_name'] if client else 'مكتب محاماة'
         phone = client['phone'] if client else ''
 
@@ -1461,7 +1471,7 @@ def telemetry_heartbeat():
                 client_id, machine_id, firm_name, contact_phone, current_tier, reported_tier,
                 status, is_read_only, days_remaining, trial_started_at, trial_expires_at,
                 last_heartbeat, last_ip, app_version, notes
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 30, ?, ?, ?, ?, ?, 'تسجيل نبضة تلقائي (عرض تدشين 30 يوم)')
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 7, ?, ?, ?, ?, ?, 'تسجيل نبضة تلقائي (فترة تجريبية 7 أيام)')
         """, (client['id'] if client else None, machine_id, firm_name, phone, initial_tier, reported_tier, initial_status, now_str, expires_str, now_str, ip_addr, app_version))
         device_id = c.lastrowid
         c.execute("SELECT * FROM telemetry_devices WHERE id = ?", (device_id,))
@@ -1545,16 +1555,13 @@ def telemetry_heartbeat():
         elif remote_cmd == 'UNLOCK':
             status = 'ACTIVE' if curr_tier != 'TRIAL' else 'TRIAL'
             tamper_flag = None
-        elif remote_cmd == 'EXTEND_DAYS':
-            add_days = int(remote_param or 3)
+        elif remote_cmd in ['EXTEND_DAYS', 'SET_DAYS']:
+            target_days = int(remote_param or 30)
             try:
-                base_dt = datetime.strptime(device['trial_expires_at'] or now_str, '%Y-%m-%d %H:%M:%S')
-                if base_dt < now_dt:
-                    base_dt = now_dt
-                new_exp = (base_dt + timedelta(days=add_days)).strftime('%Y-%m-%d 23:59:59')
-                c.execute("UPDATE telemetry_devices SET trial_expires_at = ? WHERE id = ?", (new_exp, device_id))
+                new_exp = (now_dt + timedelta(days=target_days)).strftime('%Y-%m-%d 23:59:59')
+                c.execute("UPDATE telemetry_devices SET trial_expires_at = ?, days_remaining = ?, status = 'TRIAL' WHERE id = ?", (new_exp, target_days, device_id))
                 status = 'TRIAL'
-                days_remaining += add_days
+                days_remaining = target_days
             except Exception:
                 pass
         elif remote_cmd == 'UPGRADE':
@@ -2002,15 +2009,16 @@ def radar_device_action(id):
         _push_action_to_turso("UPDATE telemetry_devices SET remote_command = 'UNLOCK', status = CASE WHEN current_tier = 'TRIAL' THEN 'TRIAL' ELSE 'ACTIVE' END, tamper_flags = NULL WHERE machine_id = ?", [{"type": "text", "value": mid}])
         flash(f'تم فك الحظر وإلغاء القفل عن جهاز ({firm_name}) بنجاح!', 'success')
     elif action_type == 'extend_days':
-        days = int(param_val or 3)
+        days = int(param_val or 30)
+        new_exp = (datetime.now() + timedelta(days=days)).strftime('%Y-%m-%d 23:59:59')
         c.execute("""
             UPDATE telemetry_devices
-            SET remote_command = 'EXTEND_DAYS', remote_command_param = ?,
-                status = 'TRIAL', days_remaining = days_remaining + ?
+            SET remote_command = 'SET_DAYS', remote_command_param = ?,
+                status = 'TRIAL', days_remaining = ?, trial_expires_at = ?
             WHERE id = ?
-        """, (str(days), days, id))
-        _push_action_to_turso("UPDATE telemetry_devices SET remote_command = 'EXTEND_DAYS', remote_command_param = ?, days_remaining = days_remaining + ? WHERE machine_id = ?", [{"type": "text", "value": str(days)}, {"type": "integer", "value": str(days)}, {"type": "text", "value": mid}])
-        flash(f'تم تمديد الديمو لـ ({firm_name}) لمدة {days} أيام إضافية بنجاح!', 'success')
+        """, (str(days), days, new_exp, id))
+        _push_action_to_turso("UPDATE telemetry_devices SET remote_command = 'SET_DAYS', remote_command_param = ?, status = 'TRIAL', days_remaining = ?, trial_expires_at = ? WHERE machine_id = ?", [{"type": "text", "value": str(days)}, {"type": "integer", "value": str(days)}, {"type": "text", "value": new_exp}, {"type": "text", "value": mid}])
+        flash(f'تم تمديد فترة الديمو لـ ({firm_name}) لتصبح {days} يوماً بنجاح!', 'success')
     elif action_type in ['enable_read_only', 'disable_read_only', 'toggle_read_only']:
         if action_type == 'enable_read_only':
             new_val = 1

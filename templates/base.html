@@ -146,6 +146,7 @@
                         <ul class="dropdown-menu dropdown-menu-end text-end shadow">
                             <li><span class="dropdown-item-text text-muted small"><i class="fa-solid fa-phone me-1"></i> {{ current_admin.phone }}</span></li>
                             <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('home') }}" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square me-2 text-warning"></i> زيارة صفحة الهبوط العامة ↗</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('settings_page') }}"><i class="fa-solid fa-gear me-2 text-primary"></i> الإعدادات وتغيير المرور</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('export_clients') }}"><i class="fa-solid fa-file-excel me-2 text-success"></i> تصدير البيانات (Excel)</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('download_db_backup') }}"><i class="fa-solid fa-database me-2 text-info"></i> تحميل نسخة احتياطية (Backup)</a></li>

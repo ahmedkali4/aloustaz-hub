@@ -208,9 +208,15 @@
                     <a href="/download" target="_blank" class="btn btn-gold btn-sm px-3 py-2 rounded-pill shadow-sm">
                         <i class="fa-solid fa-download me-1"></i> تحميل النسخة المجانية (30 يوماً)
                     </a>
+                    {% if session.get('vendor_admin_id') %}
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-warning btn-sm px-3 py-2 rounded-pill fw-bold text-dark shadow-sm" title="العودة للوحة الإدارة">
+                        <i class="fa-solid fa-gauge-high me-1"></i> لوحة الإدارة
+                    </a>
+                    {% else %}
                     <a href="/login" class="btn btn-outline-light btn-sm px-3 py-2 rounded-pill" title="دخول إدارة المبيعات">
                         <i class="fa-solid fa-lock me-1"></i> دخول الإدارة
                     </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
