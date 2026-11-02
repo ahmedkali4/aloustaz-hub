@@ -1225,6 +1225,28 @@ def redirect_to_device(machine_id):
                                firm_name=firm,
                                mid=clean_mid), 503
 
+    # Fast Health Check: Verify if laptop/Flask is actually running
+    # Prevents Cloudflare 502 Bad Gateway when laptop or app is closed
+    is_alive = False
+    try:
+        import urllib.request
+        check_req = urllib.request.Request(
+            f"{tunnel}/api/check-lock-status",
+            headers={"User-Agent": "AlOustazHub/1.0"}
+        )
+        with urllib.request.urlopen(check_req, timeout=1.8) as test_resp:
+            if test_resp.getcode() == 200:
+                is_alive = True
+    except Exception:
+        is_alive = False
+
+    if not is_alive:
+        return render_template('device_offline.html',
+                               error_title="كمبيوتر المكتب غير متصل حالياً",
+                               error_msg=f"جهاز {firm} غير متصل حالياً بالنفق السحابي (البرنامج مغلق على الكمبيوتر، أو انقطع عنه التيار الكهربائي أو الإنترنت).",
+                               firm_name=firm,
+                               mid=clean_mid), 503
+
     return redirect(tunnel, code=302)
 
 # ----------------- Sales Reps & Agents Routes -----------------
@@ -1633,6 +1655,18 @@ def telemetry_heartbeat():
         msg = "البرنامج في وضع المراجعة والطباعة فقط لوجود قسط مستحق. يرجى السداد لاستعادة كامل الصلاحيات."
 
     # Update device state in DB
+    firm_name_in = str(data.get('firm_name', '')).strip()
+    phone_in = str(data.get('contact_phone', '')).strip()
+    if firm_name_in:
+        try:
+            c.execute("UPDATE telemetry_devices SET firm_name = ? WHERE id = ?", (firm_name_in, device_id))
+        except Exception:
+            pass
+    if phone_in:
+        try:
+            c.execute("UPDATE telemetry_devices SET contact_phone = ? WHERE id = ?", (phone_in, device_id))
+        except Exception:
+            pass
     if tunnel_url:
         try:
             c.execute("UPDATE telemetry_devices SET tunnel_url = ? WHERE id = ?", (tunnel_url, device_id))
