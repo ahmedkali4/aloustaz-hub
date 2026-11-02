@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>تسجيل دخول المحامي - {{ device.firm_name if device and device.firm_name else 'رول المحكمة' }}</title>
+    <!-- Bootstrap 5 RTL -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css">
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Cairo Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#0d1b2a">
+
+    <style>
+        :root {
+            --primary-navy: #0d1b2a;
+            --secondary-navy: #1b263b;
+            --accent-gold: #c5a059;
+            --gold-hover: #b08d46;
+            --border-navy: rgba(255, 255, 255, 0.12);
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            margin: 0;
+        }
+
+        .login-card {
+            background: rgba(27, 38, 59, 0.85);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--border-navy);
+            border-radius: 24px;
+            max-width: 440px;
+            width: 100%;
+            padding: 30px 22px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        .avatar-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(197, 160, 89, 0.15);
+            border: 2px solid var(--accent-gold);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 18px;
+            color: var(--accent-gold);
+            box-shadow: 0 0 25px rgba(197, 160, 89, 0.3);
+        }
+
+        .firm-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+
+        .sub-badge {
+            background: rgba(40, 167, 69, 0.2);
+            border: 1px solid #28a745;
+            color: #4cd964;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 22px;
+        }
+
+        .form-select, .form-control {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-navy);
+            color: #ffffff;
+            border-radius: 12px;
+            padding: 11px 14px;
+            font-size: 0.92rem;
+        }
+
+        .form-select option {
+            background: #1b263b;
+            color: #ffffff;
+        }
+
+        .form-select:focus, .form-control:focus {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.25);
+            color: #ffffff;
+        }
+
+        .btn-gold {
+            background: linear-gradient(135deg, #c5a059 0%, #e0c27b 100%);
+            color: #0d1b2a;
+            font-weight: 800;
+            font-size: 0.95rem;
+            border: none;
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(197, 160, 89, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .btn-gold:active {
+            transform: scale(0.98);
+        }
+
+        .quick-lawyer-pill {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-navy);
+            border-radius: 10px;
+            padding: 8px 10px;
+            margin-bottom: 8px;
+            text-align: right;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .quick-lawyer-pill:hover, .quick-lawyer-pill.selected {
+            background: rgba(197, 160, 89, 0.2);
+            border-color: var(--accent-gold);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <div class="avatar-circle">
+            <i class="fa-solid fa-scale-balanced fa-2x"></i>
+        </div>
+
+        <h2 class="firm-title">{{ device.firm_name if device and device.firm_name else 'منظومة الأستاذ للمحاماة' }}</h2>
+        <div>
+            <span class="sub-badge">
+                <i class="fa-solid fa-cloud"></i> رول المحكمة السحابي الذكي (24/7)
+            </span>
+        </div>
+
+        {% if error_msg %}
+        <div class="alert alert-danger py-2 px-3 small rounded-3 mb-3 text-start">
+            <i class="fa-solid fa-circle-exclamation me-1"></i> {{ error_msg }}
+        </div>
+        {% endif %}
+
+        <form action="/court/{{ machine_id }}/login" method="POST" id="courtLoginForm">
+            <div class="mb-3 text-start">
+                <label class="form-label small fw-bold text-muted mb-1">
+                    <i class="fa-solid fa-user-tie text-warning me-1"></i> اختر المحامي / المستخدم:
+                </label>
+                <select name="username" id="usernameSelect" class="form-select" required onchange="onLawyerSelected()">
+                    <option value="" disabled selected>-- اختر اسمك للدخول إلى الرول --</option>
+                    {% if lawyers and lawyers|length > 0 %}
+                        {% for law in lawyers %}
+                        <option value="{{ law.username }}" data-role="{{ law.role }}">
+                            {{ law.full_name }} {% if law.specialty %}({{ law.specialty }}){% endif %}
+                        </option>
+                        {% endfor %}
+                    {% else %}
+                        <option value="lawyer1">أ. محمود سيف الدين (نقض - جنايات)</option>
+                        <option value="lawyer2">أ. شريف القاضي (استئناف - مدني وعقارات)</option>
+                        <option value="lawyer3">أ. هاني رضوان (استئناف - تجاري وبنوك)</option>
+                        <option value="lawyer4">أ. نرمين الباشا (ابتدائي - أسرة)</option>
+                        <option value="trainee1">أ. كريم الديب (محامٍ متدرب)</option>
+                        <option value="trainee2">أ. سارة الجوهري (محامية متدربة)</option>
+                        <option value="trainee3">أ. عمر الصاوي (محامٍ متدرب)</option>
+                        <option value="trainee4">أ. ميادة الألفي (محامية متدربة)</option>
+                        <option value="admin">أ. أحمد مبروك (المحامي بالنقض - المدير)</option>
+                    {% endif %}
+                </select>
+            </div>
+
+            <div class="mb-4 text-start">
+                <label class="form-label small fw-bold text-muted mb-1">
+                    <i class="fa-solid fa-key text-warning me-1"></i> كلمة المرور / رمز الدخول (PIN):
+                </label>
+                <div class="input-group">
+                    <input type="password" name="password" id="passwordInput" class="form-control" value="123456" placeholder="أدخل كلمة المرور" required>
+                    <button class="btn btn-outline-secondary text-white" type="button" onclick="togglePassword()">
+                        <i class="fa-solid fa-eye" id="pwdToggleIcon"></i>
+                    </button>
+                </div>
+                <div class="form-text text-muted" style="font-size: 0.72rem;">
+                    💡 كلمة السر الموحدة الافتراضية للاختبار: <code>123456</code> (أو <code>admin123</code> للمدير)
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-gold mb-3">
+                <i class="fa-solid fa-right-to-bracket me-1"></i> الدخول إلى رول الجلسات
+            </button>
+
+            <div class="pt-2 border-top border-secondary text-center">
+                <a href="/tunnel/{{ machine_id }}" target="_blank" class="text-white-50 small text-decoration-none" style="font-size: 0.78rem;">
+                    <i class="fa-solid fa-desktop me-1"></i> فتح نسخة المكتب الكاملة (في حال تشغيل اللابتوب)
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        function togglePassword() {
+            const input = document.getElementById('passwordInput');
+            const icon = document.getElementById('pwdToggleIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fa-solid fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fa-solid fa-eye';
+            }
+        }
+
+        function onLawyerSelected() {
+            const sel = document.getElementById('usernameSelect');
+            const pwd = document.getElementById('passwordInput');
+            if (sel.value === 'admin') {
+                pwd.value = 'admin123';
+            } else {
+                pwd.value = '123456';
+            }
+        }
+    </script>
+</body>
+</html>

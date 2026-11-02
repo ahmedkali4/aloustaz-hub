@@ -466,16 +466,35 @@
                     </span>
                 </div>
             </div>
-            <button class="btn btn-sm btn-outline-secondary text-white rounded-circle" style="width: 36px; height: 36px;" onclick="location.reload();" title="تحديث">
-                <i class="fa-solid fa-rotate"></i>
-            </button>
+            <div class="d-flex align-items-center gap-2">
+                {% if logged_lawyer %}
+                <span class="badge bg-dark border border-warning text-warning px-2 py-1" style="font-size: 0.76rem;">
+                    <i class="fa-solid fa-user-tie me-1"></i> {{ logged_lawyer.name }}
+                </span>
+                <a href="/court/{{ machine_id }}/logout" class="btn btn-outline-danger btn-sm fw-bold px-2 py-1 rounded-pill" style="font-size: 0.74rem;" title="تسجيل الخروج والدخول بحساب محامٍ آخر">
+                    <i class="fa-solid fa-right-from-bracket me-1"></i> خروج
+                </a>
+                {% else %}
+                <a href="/court/{{ machine_id }}?login=1" class="btn btn-warning btn-sm fw-bold px-2 py-1 rounded-pill shadow-sm" style="font-size: 0.74rem;">
+                    <i class="fa-solid fa-right-to-bracket me-1"></i> تسجيل الدخول
+                </a>
+                {% endif %}
+                <button class="btn btn-sm btn-outline-secondary text-white rounded-circle" style="width: 34px; height: 34px;" onclick="location.reload();" title="تحديث الرول">
+                    <i class="fa-solid fa-rotate"></i>
+                </button>
+            </div>
         </div>
     </header>
 
     {% if tunnel_offline_alert %}
-    <div class="alert alert-warning m-3 py-2 px-3 rounded-3 small border-0 shadow-sm" style="background: rgba(245, 158, 11, 0.2); color: #ffd27a;">
-        <i class="fa-solid fa-circle-info me-1"></i>
-        كمبيوتر المكتب مغلق حالياً. رول الجلسات يعمل بكامل طاقته سحابياً، ويمكنك تسجيل وتعديل القرارات في أي لحظة.
+    <div class="alert alert-warning m-3 py-2 px-3 rounded-3 small border-0 shadow-sm alert-dismissible fade show" role="alert" style="background: rgba(245, 158, 11, 0.2); color: #ffd27a;">
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                <i class="fa-solid fa-circle-info me-1"></i>
+                تنبيه: تعذر الاتصال المباشر بنسخة الديسك توب حالياً أو النفق قيد التحديث. رول الجلسات يعمل بكامل طاقته سحابياً 24/7 وتسجيل القرارات متاح لحظياً.
+            </div>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close" style="font-size: 0.65rem;"></button>
+        </div>
     </div>
     {% endif %}
 
@@ -513,6 +532,24 @@
             <button class="filter-btn" data-filter="undecided" onclick="setFilter('undecided', this)">بانتظار القرار</button>
             <button class="filter-btn" data-filter="decided" onclick="setFilter('decided', this)">تم تسجيل القرار</button>
         </div>
+
+        <!-- Lawyer Filter Dropdown -->
+        <div class="mt-2 pt-2 border-top border-secondary">
+            <div class="d-flex align-items-center gap-2">
+                <span class="small fw-bold text-warning text-nowrap"><i class="fa-solid fa-user-tie me-1"></i> تصفية بمحامي الجلسة:</span>
+                <select id="lawyerFilter" class="form-select form-select-sm bg-dark text-white border-secondary rounded-pill" onchange="filterDocket()">
+                    <option value="all">👥 جميع محامي المكتب (عرض كل الرول)</option>
+                    <option value="محمود سيف الدين">أ. محمود سيف الدين (نقض - جنايات)</option>
+                    <option value="شريف القاضي">أ. شريف القاضي (استئناف - مدني وعقارات)</option>
+                    <option value="هاني رضوان">أ. هاني رضوان (استئناف - تجاري وبنوك)</option>
+                    <option value="نرمين الباشا">أ. نرمين الباشا (ابتدائي - أسرة)</option>
+                    <option value="كريم الديب">أ. كريم الديب (محامٍ متدرب)</option>
+                    <option value="سارة الجوهري">أ. سارة الجوهري (محامية متدربة)</option>
+                    <option value="عمر الصاوي">أ. عمر الصاوي (محامٍ متدرب)</option>
+                    <option value="ميادة الألفي">أ. ميادة الألفي (محامية متدربة)</option>
+                </select>
+            </div>
+        </div>
     </div>
 
     <!-- Hearings Docket List -->
@@ -528,6 +565,7 @@
                  data-court="{{ h.court_name }}"
                  data-circuit="{{ h.circuit_name }}"
                  data-date="{{ h.hearing_date }}"
+                 data-lawyer="{{ h.hearing_type }}"
                  data-has-decision="{{ '1' if has_decision else '0' }}"
                  id="card-{{ h.local_hearing_id }}">
 
@@ -550,6 +588,14 @@
                     <span class="badge bg-secondary ms-1">{{ h.circuit_name }}</span>
                     {% endif %}
                 </div>
+
+                {% if h.hearing_type and h.hearing_type|trim != '' %}
+                <div class="mb-2">
+                    <span class="badge bg-dark border border-secondary text-info py-1 px-2" style="font-size: 0.78rem;">
+                        <i class="fa-solid fa-user-tie me-1"></i> الحضور والمتابعة: <strong>{{ h.hearing_type }}</strong>
+                    </span>
+                </div>
+                {% endif %}
 
                 <!-- Client & Opponent Info -->
                 <div class="client-box">
@@ -648,7 +694,7 @@
             </span>
         </div>
         <div>
-            <a href="/tunnel/{{ machine_id }}" class="btn-tunnel-full" title="فتح برنامج المكتب كاملاً في حال كان الكمبيوتر مفتوحاً">
+            <a href="/tunnel/{{ machine_id }}" target="_blank" class="btn-tunnel-full" title="فتح برنامج المكتب كاملاً وتسجيل الدخول باسم أي محامٍ">
                 <i class="fa-solid fa-desktop"></i>
                 <span>نسخة المكتب الكاملة</span>
             </a>
@@ -681,6 +727,20 @@
                         <span class="preset-badge" onclick="appendPreset('وقف الدعوى جزاءً')">وقف جزائي</span>
                     </div>
 
+                    <div class="mb-2">
+                        <label class="form-label fw-bold small text-white"><i class="fa-solid fa-user-pen me-1 text-warning"></i> اسم المحامي مسجل القرار:</label>
+                        <select id="recordingLawyer" class="form-select form-select-sm bg-dark text-white border-secondary">
+                            <option value="أ. محمود سيف الدين">أ. محمود سيف الدين (نقض)</option>
+                            <option value="أ. شريف القاضي">أ. شريف القاضي (استئناف)</option>
+                            <option value="أ. هاني رضوان">أ. هاني رضوان (استئناف)</option>
+                            <option value="أ. نرمين الباشا">أ. نرمين الباشا (ابتدائي)</option>
+                            <option value="أ. كريم الديب">أ. كريم الديب (متدرب)</option>
+                            <option value="أ. سارة الجوهري">أ. سارة الجوهري (متدربة)</option>
+                            <option value="أ. عمر الصاوي">أ. عمر الصاوي (متدرب)</option>
+                            <option value="أ. ميادة الألفي">أ. ميادة الألفي (متدربة)</option>
+                        </select>
+                    </div>
+
                     <!-- Custom Decision Textarea -->
                     <div class="mb-3">
                         <label class="form-label fw-bold small text-white">نص القرار أو التأجيل:</label>
@@ -710,6 +770,22 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             decisionModalInstance = new bootstrap.Modal(document.getElementById('decisionModal'));
+
+            // Auto-filter by logged lawyer if applicable
+            {% if logged_lawyer and logged_lawyer.name %}
+            const filterSel = document.getElementById('lawyerFilter');
+            const lawyerName = "{{ logged_lawyer.name }}";
+            if (filterSel) {
+                for (let i = 0; i < filterSel.options.length; i++) {
+                    const opt = filterSel.options[i];
+                    if (opt.value !== 'all' && (lawyerName.includes(opt.value) || opt.text.includes(lawyerName))) {
+                        filterSel.selectedIndex = i;
+                        filterDocket();
+                        break;
+                    }
+                }
+            }
+            {% endif %}
         });
 
         function setFilter(type, btn) {
@@ -723,16 +799,20 @@
             const query = (document.getElementById('searchInput').value || '').trim().toLowerCase();
             const cards = document.querySelectorAll('.hearing-card');
 
+            const lawyerSel = (document.getElementById('lawyerFilter') ? document.getElementById('lawyerFilter').value : 'all').toLowerCase();
+
             cards.forEach(card => {
                 const caseNum = (card.getAttribute('data-case-num') || '').toLowerCase();
                 const client = (card.getAttribute('data-client') || '').toLowerCase();
                 const opponent = (card.getAttribute('data-opponent') || '').toLowerCase();
                 const court = (card.getAttribute('data-court') || '').toLowerCase();
                 const circuit = (card.getAttribute('data-circuit') || '').toLowerCase();
+                const lawyer = (card.getAttribute('data-lawyer') || '').toLowerCase();
                 const date = card.getAttribute('data-date') || '';
                 const hasDecision = card.getAttribute('data-has-decision') === '1';
 
                 const matchesQuery = !query || caseNum.includes(query) || client.includes(query) || opponent.includes(query) || court.includes(query) || circuit.includes(query);
+                const matchesLawyer = (lawyerSel === 'all') || lawyer.includes(lawyerSel);
 
                 let matchesFilter = true;
                 if (currentFilter === 'today') {
@@ -756,7 +836,7 @@
                     matchesFilter = hasDecision;
                 }
 
-                if (matchesQuery && matchesFilter) {
+                if (matchesQuery && matchesFilter && matchesLawyer) {
                     card.style.display = 'block';
                 } else {
                     card.style.display = 'none';
@@ -771,6 +851,20 @@
             const fb = document.getElementById('saveFeedback');
             fb.className = 'alert d-none small py-2';
             fb.innerText = '';
+
+            {% if logged_lawyer and logged_lawyer.name %}
+            const recSel = document.getElementById('recordingLawyer');
+            const curLawyer = "{{ logged_lawyer.name }}";
+            if (recSel) {
+                for (let i = 0; i < recSel.options.length; i++) {
+                    if (curLawyer.includes(recSel.options[i].value) || recSel.options[i].text.includes(curLawyer)) {
+                        recSel.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+            {% endif %}
+
             decisionModalInstance.show();
         }
 
@@ -785,7 +879,10 @@
 
         function saveDecision() {
             const hearingId = document.getElementById('modalHearingId').value;
-            const decisionText = document.getElementById('decisionInput').value.trim();
+            const lawyerEl = document.getElementById('recordingLawyer');
+            const lawyerName = lawyerEl ? lawyerEl.value : '';
+            let rawDecision = document.getElementById('decisionInput').value.trim();
+            const decisionText = (lawyerName && !rawDecision.startsWith('[')) ? '[' + lawyerName + ']: ' + rawDecision : rawDecision;
             const btn = document.getElementById('btnSaveDecision');
             const fb = document.getElementById('saveFeedback');
 
@@ -806,7 +903,8 @@
                 body: JSON.stringify({
                     machine_id: MACHINE_ID,
                     hearing_id: hearingId,
-                    decision: decisionText
+                    decision: decisionText,
+                    lawyer: document.getElementById('recordingLawyer') ? document.getElementById('recordingLawyer').value : ''
                 })
             })
             .then(res => res.json())
