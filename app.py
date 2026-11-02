@@ -1181,6 +1181,52 @@ def mobile_qr_view():
 
     return render_template('mobile_qr.html', tunnel_url=current_url, qr_image_url=qr_image_url, qr_available=qr_available)
 
+
+# ----------------- Permanent Smart Gateway for Mobile Access -----------------
+
+@app.route('/go/<machine_id>')
+@app.route('/connect/<machine_id>')
+def redirect_to_device(machine_id):
+    """
+    Permanent Smart Gateway for Law Office Mobile Access.
+    Redirects lawyers from anywhere to their office's active Cloudflare tunnel.
+    If the office PC is offline or unpowered, renders a branded offline status card.
+    """
+    clean_mid = str(machine_id).strip().upper()
+    conn = database.get_db()
+    c = conn.cursor()
+    c.execute("SELECT * FROM telemetry_devices WHERE machine_id = ?", (clean_mid,))
+    device = c.fetchone()
+    conn.close()
+
+    if not device:
+        return render_template('device_offline.html',
+                               error_title="جهاز المكتب غير مسجل",
+                               error_msg="لم يتم العثور على جهاز مسجل بهذه البصمة في قاعدة البيانات المركزية. يرجى التأكد من تشغيل البرنامج على كمبيوتر المكتب أولاً.",
+                               firm_name=None,
+                               mid=clean_mid), 404
+
+    tunnel = ''
+    try:
+        tunnel = (device['tunnel_url'] or '').strip()
+    except Exception:
+        pass
+
+    firm = 'مكتب المحاماة'
+    try:
+        firm = device['firm_name'] or 'مكتب المحاماة'
+    except Exception:
+        pass
+
+    if not tunnel or not tunnel.startswith('http'):
+        return render_template('device_offline.html',
+                               error_title="كمبيوتر المكتب غير متصل حالياً",
+                               error_msg=f"جهاز {firm} غير متصل حالياً بالنفق السحابي (قد يكون الكمبيوتر مغلقاً، أو انقطع عنه التيار الكهربائي أو الإنترنت).",
+                               firm_name=firm,
+                               mid=clean_mid), 503
+
+    return redirect(tunnel, code=302)
+
 # ----------------- Sales Reps & Agents Routes -----------------
 
 @app.route('/reps')
@@ -1339,6 +1385,7 @@ def telemetry_install():
     firm_name = str(data.get('firm_name', 'مكتب محاماة جديد')).strip()
     phone = str(data.get('phone', '')).strip()
     app_version = str(data.get('app_version', '2.0')).strip()
+    tunnel_url = str(data.get('tunnel_url', '')).strip()
     ip_addr = request.headers.get('CF-Connecting-IP') or request.remote_addr or '127.0.0.1'
     now_dt = datetime.now()
     client_time_str = str(data.get('client_time', '')).strip()
@@ -1586,6 +1633,11 @@ def telemetry_heartbeat():
         msg = "البرنامج في وضع المراجعة والطباعة فقط لوجود قسط مستحق. يرجى السداد لاستعادة كامل الصلاحيات."
 
     # Update device state in DB
+    if tunnel_url:
+        try:
+            c.execute("UPDATE telemetry_devices SET tunnel_url = ? WHERE id = ?", (tunnel_url, device_id))
+        except Exception:
+            pass
     c.execute("""
         UPDATE telemetry_devices
         SET current_tier = ?, reported_tier = ?, status = ?, is_read_only = ?,
@@ -1683,7 +1735,7 @@ def _sync_turso_into_local_hub():
                 {
                     "type": "execute",
                     "stmt": {
-                        "sql": "SELECT machine_id, firm_name, contact_phone, current_tier, reported_tier, status, is_read_only, days_remaining, cases_count, hearings_count, app_version, trial_started_at, trial_expires_at, last_heartbeat, broadcast_message FROM telemetry_devices"
+                        "sql": "SELECT machine_id, firm_name, contact_phone, current_tier, reported_tier, status, is_read_only, days_remaining, cases_count, hearings_count, app_version, trial_started_at, trial_expires_at, last_heartbeat, broadcast_message, tunnel_url FROM telemetry_devices"
                     }
                 },
                 {
@@ -1739,13 +1791,14 @@ def _sync_turso_into_local_hub():
                             cases_count = COALESCE(?, cases_count),
                             hearings_count = COALESCE(?, hearings_count),
                             last_heartbeat = COALESCE(?, last_heartbeat),
-                            broadcast_message = COALESCE(?, broadcast_message)
+                            broadcast_message = COALESCE(?, broadcast_message),
+                            tunnel_url = COALESCE(?, tunnel_url)
                         WHERE machine_id = ?
                     """, (
                         d.get('firm_name'), d.get('contact_phone'), d.get('current_tier'),
                         d.get('reported_tier'), d.get('status'), d.get('is_read_only'),
                         d.get('days_remaining'), d.get('cases_count'), d.get('hearings_count'),
-                        d.get('last_heartbeat'), d.get('broadcast_message'), mid
+                        d.get('last_heartbeat'), d.get('broadcast_message'), d.get('tunnel_url'), mid
                     ))
                 else:
                     c.execute("""
