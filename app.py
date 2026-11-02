@@ -4,7 +4,7 @@ import sys
 import secrets
 from datetime import datetime, date, timedelta
 from urllib.parse import quote
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, Response, send_file
+from flask import Flask, make_response, render_template, request, redirect, url_for, session, flash, jsonify, Response, send_file
 from werkzeug.security import check_password_hash, generate_password_hash
 from functools import wraps
 import csv
@@ -1234,20 +1234,38 @@ def redirect_to_device(machine_id):
             f"{tunnel}/api/check-lock-status",
             headers={"User-Agent": "AlOustazHub/1.0"}
         )
-        with urllib.request.urlopen(check_req, timeout=1.8) as test_resp:
+        with urllib.request.urlopen(check_req, timeout=3.5) as test_resp:
             if test_resp.getcode() == 200:
                 is_alive = True
     except Exception:
         is_alive = False
 
     if not is_alive:
-        return render_template('device_offline.html',
+        # Instantly clear dead tunnel in database so all subsequent mobile requests are instant
+        try:
+            conn_cl = database.get_db()
+            c_cl = conn_cl.cursor()
+            c_cl.execute("UPDATE telemetry_devices SET tunnel_url = NULL WHERE machine_id = ?", (clean_mid,))
+            conn_cl.commit()
+            conn_cl.close()
+        except Exception:
+            pass
+
+        resp = make_response(render_template('device_offline.html',
                                error_title="كمبيوتر المكتب غير متصل حالياً",
                                error_msg=f"جهاز {firm} غير متصل حالياً بالنفق السحابي (البرنامج مغلق على الكمبيوتر، أو انقطع عنه التيار الكهربائي أو الإنترنت).",
                                firm_name=firm,
-                               mid=clean_mid), 503
+                               mid=clean_mid), 503)
+        resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+        resp.headers['Pragma'] = 'no-cache'
+        resp.headers['Expires'] = '0'
+        return resp
 
-    return redirect(tunnel, code=302)
+    resp = redirect(tunnel, code=302)
+    resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    resp.headers['Pragma'] = 'no-cache'
+    resp.headers['Expires'] = '0'
+    return resp
 
 # ----------------- Sales Reps & Agents Routes -----------------
 
