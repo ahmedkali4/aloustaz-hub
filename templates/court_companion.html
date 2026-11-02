@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{{ device.firm_name if device and device.firm_name else 'رول الجلسات' }} - منظومة الأستاذ للمحاماة</title>
+    <!-- Bootstrap 5 RTL -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css">
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Cairo Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#0d1b2a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <style>
+        :root {
+            --primary-navy: #0d1b2a;
+            --secondary-navy: #1b263b;
+            --card-navy: #162438;
+            --accent-gold: #c5a059;
+            --gold-hover: #b08d46;
+            --gold-soft: rgba(197, 160, 89, 0.12);
+            --border-navy: rgba(255, 255, 255, 0.12);
+            --text-muted-custom: #a8b8cc;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: var(--primary-navy);
+            color: #ffffff;
+            margin: 0;
+            padding: 0;
+            padding-bottom: 90px;
+            min-height: 100vh;
+        }
+
+        /* Top Header */
+        .app-header {
+            background: linear-gradient(180deg, rgba(13,27,42,0.98) 0%, rgba(27,38,59,0.95) 100%);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-navy);
+            position: sticky;
+            top: 0;
+            z-index: 1030;
+            padding: 12px 16px;
+        }
+
+        .firm-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .firm-title i {
+            color: var(--accent-gold);
+        }
+
+        .cloud-badge {
+            background: rgba(40, 167, 69, 0.2);
+            border: 1px solid #28a745;
+            color: #4cd964;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .pulse-dot {
+            width: 7px;
+            height: 7px;
+            background-color: #28a745;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse-green 1.8s infinite;
+        }
+
+        @keyframes pulse-green {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(40, 167, 69, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid var(--border-navy);
+        }
+
+        .stat-item {
+            background: var(--card-navy);
+            border: 1px solid var(--border-navy);
+            border-radius: 12px;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .stat-num {
+            font-size: 1.25rem;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 2px;
+        }
+
+        .stat-label {
+            font-size: 0.68rem;
+            color: var(--text-muted-custom);
+            margin: 0;
+            font-weight: 600;
+        }
+
+        /* Filter & Search Bar */
+        .search-section {
+            padding: 12px 16px;
+            background: var(--secondary-navy);
+            border-bottom: 1px solid var(--border-navy);
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .search-box i {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted-custom);
+        }
+
+        .search-box input {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-navy);
+            color: #ffffff;
+            border-radius: 50px;
+            padding: 9px 40px 9px 16px;
+            font-size: 0.88rem;
+            width: 100%;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--accent-gold);
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.2);
+            color: #ffffff;
+        }
+
+        .filter-scroll {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            scrollbar-width: none;
+        }
+
+        .filter-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .filter-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-navy);
+            color: #d1dced;
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 6px 14px;
+            border-radius: 20px;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, #c5a059 0%, #d4b568 100%);
+            color: #0d1b2a;
+            border-color: var(--accent-gold);
+            font-weight: 800;
+        }
+
+        /* Case Cards */
+        .docket-container {
+            padding: 14px 16px;
+            max-width: 720px;
+            margin: 0 auto;
+        }
+
+        .hearing-card {
+            background: var(--card-navy);
+            border: 1px solid var(--border-navy);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 14px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hearing-card.today-card {
+            border-right: 4px solid var(--accent-gold);
+        }
+
+        .hearing-card.decided-card {
+            border-right: 4px solid #28a745;
+        }
+
+        .card-header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+            gap: 8px;
+        }
+
+        .case-number-badge {
+            background: var(--gold-soft);
+            color: var(--accent-gold);
+            border: 1px solid rgba(197, 160, 89, 0.35);
+            font-size: 0.95rem;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 8px;
+            display: inline-block;
+        }
+
+        .date-badge {
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #d1dced;
+        }
+
+        .date-badge.is-today {
+            background: #c5a059;
+            color: #0d1b2a;
+            font-weight: 800;
+        }
+
+        .court-row {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: #e0e8f5;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .client-box {
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            padding: 10px 12px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .party-name {
+            font-size: 0.92rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .actions-flex {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+        }
+
+        .btn-wa {
+            background: #25D366;
+            color: #ffffff;
+            font-size: 0.76rem;
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 20px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            border: none;
+        }
+
+        .btn-call {
+            background: #007bff;
+            color: #ffffff;
+            font-size: 0.76rem;
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 20px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            border: none;
+        }
+
+        .poa-tag {
+            font-size: 0.75rem;
+            color: var(--accent-gold);
+            background: rgba(197, 160, 89, 0.1);
+            border: 1px dashed rgba(197, 160, 89, 0.4);
+            border-radius: 6px;
+            padding: 2px 6px;
+            display: inline-block;
+            margin-top: 4px;
+        }
+
+        .requirements-box {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 0.83rem;
+            color: #ffd27a;
+            margin-bottom: 10px;
+        }
+
+        /* Decision Section */
+        .decision-section {
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 12px;
+            padding: 10px 12px;
+            border: 1px solid var(--border-navy);
+        }
+
+        .decision-display {
+            background: rgba(40, 167, 69, 0.15);
+            border: 1px solid rgba(40, 167, 69, 0.4);
+            border-radius: 8px;
+            padding: 8px 10px;
+            color: #62d87e;
+            font-size: 0.86rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+        }
+
+        .btn-record-decision {
+            background: linear-gradient(135deg, #c5a059 0%, #e0c27b 100%);
+            color: #0d1b2a;
+            font-weight: 800;
+            font-size: 0.84rem;
+            border: none;
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(197, 160, 89, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-record-decision:active {
+            transform: scale(0.98);
+        }
+
+        .btn-edit-decision {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-navy);
+            color: #ffffff;
+            font-size: 0.74rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+
+        /* Bottom Floating Bar */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(13, 27, 42, 0.95);
+            backdrop-filter: blur(14px);
+            border-top: 1px solid var(--border-navy);
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1020;
+        }
+
+        .btn-tunnel-full {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-navy);
+            color: #d1dced;
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 6px 14px;
+            border-radius: 20px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Preset Pills in Modal */
+        .preset-badge {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: inline-block;
+            margin: 3px 2px;
+            transition: background 0.2s;
+        }
+
+        .preset-badge:hover, .preset-badge:active {
+            background: var(--accent-gold);
+            color: #0d1b2a;
+            font-weight: 700;
+        }
+
+        .modal-content {
+            background: var(--secondary-navy);
+            color: #ffffff;
+            border: 1px solid var(--border-navy);
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- App Header -->
+    <header class="app-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="firm-title">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                    <span>{{ device.firm_name if device and device.firm_name else 'منظومة الأستاذ للمحاماة' }}</span>
+                </h1>
+                <div class="d-flex align-items-center gap-2 mt-1">
+                    <span class="cloud-badge">
+                        <span class="pulse-dot"></span> رول المحكمة السحابي (24/7)
+                    </span>
+                    <span class="text-muted small" style="font-size: 0.7rem; color: var(--text-muted-custom);">
+                        {{ today_arabic }}
+                    </span>
+                </div>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary text-white rounded-circle" style="width: 36px; height: 36px;" onclick="location.reload();" title="تحديث">
+                <i class="fa-solid fa-rotate"></i>
+            </button>
+        </div>
+    </header>
+
+    {% if tunnel_offline_alert %}
+    <div class="alert alert-warning m-3 py-2 px-3 rounded-3 small border-0 shadow-sm" style="background: rgba(245, 158, 11, 0.2); color: #ffd27a;">
+        <i class="fa-solid fa-circle-info me-1"></i>
+        كمبيوتر المكتب مغلق حالياً. رول الجلسات يعمل بكامل طاقته سحابياً، ويمكنك تسجيل وتعديل القرارات في أي لحظة.
+    </div>
+    {% endif %}
+
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+        <div class="stat-item">
+            <div class="stat-num text-warning" id="countToday">{{ stats.today }}</div>
+            <div class="stat-label">جلسات اليوم</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-num text-info" id="countTomorrow">{{ stats.tomorrow }}</div>
+            <div class="stat-label">جلسات الغد</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-num text-success" id="countDecided">{{ stats.decided }}</div>
+            <div class="stat-label">تم حسمها</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-num text-white" id="countTotal">{{ stats.total }}</div>
+            <div class="stat-label">إجمالي الرول</div>
+        </div>
+    </div>
+
+    <!-- Search & Filters -->
+    <div class="search-section">
+        <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="searchInput" placeholder="بحث برقم القضية، الموكل، الخصم، المحكمة..." onkeyup="filterDocket()">
+        </div>
+        <div class="filter-scroll">
+            <button class="filter-btn active" data-filter="all" onclick="setFilter('all', this)">كل الرول</button>
+            <button class="filter-btn" data-filter="today" onclick="setFilter('today', this)">جلسات اليوم ({{ stats.today }})</button>
+            <button class="filter-btn" data-filter="tomorrow" onclick="setFilter('tomorrow', this)">غداً ({{ stats.tomorrow }})</button>
+            <button class="filter-btn" data-filter="week" onclick="setFilter('week', this)">خلال أسبوع</button>
+            <button class="filter-btn" data-filter="undecided" onclick="setFilter('undecided', this)">بانتظار القرار</button>
+            <button class="filter-btn" data-filter="decided" onclick="setFilter('decided', this)">تم تسجيل القرار</button>
+        </div>
+    </div>
+
+    <!-- Hearings Docket List -->
+    <main class="docket-container" id="docketContainer">
+        {% if hearings and hearings|length > 0 %}
+            {% for h in hearings %}
+            {% set is_today = (h.hearing_date == today_str) %}
+            {% set has_decision = (h.lawyer_decision and h.lawyer_decision|trim != '') %}
+            <div class="hearing-card {{ 'today-card' if is_today else '' }} {{ 'decided-card' if has_decision else '' }}"
+                 data-case-num="{{ h.case_number }}"
+                 data-client="{{ h.client_name }}"
+                 data-opponent="{{ h.opponent_name }}"
+                 data-court="{{ h.court_name }}"
+                 data-circuit="{{ h.circuit_name }}"
+                 data-date="{{ h.hearing_date }}"
+                 data-has-decision="{{ '1' if has_decision else '0' }}"
+                 id="card-{{ h.local_hearing_id }}">
+
+                <div class="card-header-flex">
+                    <div>
+                        <span class="case-number-badge">
+                            <i class="fa-solid fa-briefcase me-1"></i> قضية رقم {{ h.case_number }} {% if h.case_year %}لسنة {{ h.case_year }}{% endif %}
+                        </span>
+                    </div>
+                    <span class="date-badge {{ 'is-today' if is_today else '' }}">
+                        <i class="fa-regular fa-calendar-check me-1"></i> {{ h.hearing_date }}
+                        {% if is_today %} (اليوم) {% endif %}
+                    </span>
+                </div>
+
+                <div class="court-row">
+                    <i class="fa-solid fa-landmark text-warning"></i>
+                    <span>{{ h.court_name }}</span>
+                    {% if h.circuit_name %}
+                    <span class="badge bg-secondary ms-1">{{ h.circuit_name }}</span>
+                    {% endif %}
+                </div>
+
+                <!-- Client & Opponent Info -->
+                <div class="client-box">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="party-name text-white">
+                                <i class="fa-solid fa-user-tie text-info me-1"></i>
+                                <span>الموكل: <strong>{{ h.client_name }}</strong></span>
+                            </div>
+                            {% if h.poa_number %}
+                            <div class="poa-tag">
+                                <i class="fa-solid fa-stamp me-1"></i> توكيل: {{ h.poa_number }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Direct WhatsApp and Call Actions -->
+                        {% if h.client_phone and h.client_phone|trim != '' %}
+                        {% set raw_phone = h.client_phone|replace(' ', '')|replace('-', '') %}
+                        {% set wa_phone = raw_phone if raw_phone.startswith('2') or raw_phone.startswith('+') else '2' + raw_phone %}
+                        {% set wa_text = 'مرحباً أستاذ ' + h.client_name + '، بخصوص جلستكم اليوم في القضية رقم ' + h.case_number + ' بمحكمة ' + h.court_name %}
+                        <div class="actions-flex">
+                            <a href="https://wa.me/{{ wa_phone|replace('+', '') }}?text={{ wa_text|urlencode }}" target="_blank" class="btn-wa">
+                                <i class="fa-brands fa-whatsapp"></i> واتساب
+                            </a>
+                            <a href="tel:{{ raw_phone }}" class="btn-call">
+                                <i class="fa-solid fa-phone"></i> اتصال
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if h.opponent_name and h.opponent_name|trim != '' %}
+                    <div class="text-muted small mt-2 pt-2 border-top border-secondary" style="font-size: 0.8rem; color: #a8b8cc;">
+                        <i class="fa-solid fa-user-xmark text-danger me-1"></i>
+                        الخصم: <span class="text-white">{{ h.opponent_name }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Requirements & Defense Notes -->
+                {% if h.requirements and h.requirements|trim != '' %}
+                <div class="requirements-box">
+                    <strong><i class="fa-solid fa-clipboard-list me-1"></i> المطلوب في الجلسة:</strong>
+                    <div>{{ h.requirements }}</div>
+                </div>
+                {% endif %}
+
+                {% if h.defense_notes and h.defense_notes|trim != '' %}
+                <div class="text-muted small mb-2 p-2 rounded-2" style="background: rgba(255,255,255,0.03); font-size: 0.8rem; color: #cbd5e1;">
+                    <i class="fa-regular fa-note-sticky text-info me-1"></i>
+                    <strong>ملاحظات الدفاع:</strong> {{ h.defense_notes }}
+                </div>
+                {% endif %}
+
+                <!-- Decision Section -->
+                <div class="decision-section mt-2" id="decision-box-{{ h.local_hearing_id }}">
+                    {% if has_decision %}
+                    <div class="decision-display" id="decision-text-{{ h.local_hearing_id }}">
+                        <i class="fa-solid fa-circle-check mt-1 text-success"></i>
+                        <div class="flex-grow-1">
+                            <span class="d-block text-white-50 small" style="font-size: 0.72rem;">قرار الجلسة المسجل:</span>
+                            <span>{{ h.lawyer_decision }}</span>
+                        </div>
+                        <button type="button" class="btn-edit-decision" onclick="openDecisionModal('{{ h.local_hearing_id }}', '{{ h.case_number }}', '{{ h.lawyer_decision|replace('\'', '\\\'') }}')">
+                            تعديل
+                        </button>
+                    </div>
+                    {% else %}
+                    <button type="button" class="btn-record-decision" onclick="openDecisionModal('{{ h.local_hearing_id }}', '{{ h.case_number }}', '')">
+                        <i class="fa-solid fa-gavel"></i>
+                        تسجيل قرار الجلسة الآن
+                    </button>
+                    {% endif %}
+                </div>
+
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fa-solid fa-calendar-xmark fa-3x text-muted mb-3"></i>
+                <h5 class="fw-bold text-white mb-2">لا توجد جلسات مسجلة في هذا الرول</h5>
+                <p class="text-muted small mb-4">عند إضافة جلسات من البرنامج على كمبيوتر المكتب، ستظهر هنا فوراً وتلقائياً.</p>
+                <button class="btn btn-outline-warning btn-sm" onclick="location.reload();">
+                    <i class="fa-solid fa-rotate me-1"></i> إعادة فحص السحابة
+                </button>
+            </div>
+        {% endif %}
+    </main>
+
+    <!-- Bottom Floating Navigation -->
+    <nav class="bottom-nav">
+        <div>
+            <span class="badge bg-dark border border-secondary text-white-50" style="font-size: 0.72rem;">
+                الجهاز: {{ machine_id }}
+            </span>
+        </div>
+        <div>
+            <a href="/tunnel/{{ machine_id }}" class="btn-tunnel-full" title="فتح برنامج المكتب كاملاً في حال كان الكمبيوتر مفتوحاً">
+                <i class="fa-solid fa-desktop"></i>
+                <span>نسخة المكتب الكاملة</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Record Decision Modal -->
+    <div class="modal fade" id="decisionModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg">
+                <div class="modal-header border-bottom border-secondary pb-2">
+                    <h5 class="modal-title fw-bold fs-6">
+                        <i class="fa-solid fa-gavel text-warning me-2"></i>
+                        تسجيل قرار الجلسة - قضية <span id="modalCaseNum" class="text-warning"></span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body pt-3">
+                    <input type="hidden" id="modalHearingId">
+
+                    <!-- Quick Presets -->
+                    <label class="form-label text-muted small fw-bold mb-1">خيارات سريعة (اضغط للإدراج الفوري):</label>
+                    <div class="mb-3">
+                        <span class="preset-badge" onclick="appendPreset('تأجيل لإعادة الإعلان')">إعادة إعلان</span>
+                        <span class="preset-badge" onclick="appendPreset('تأجيل للمذكرات والمستندات')">مذكرات ومستندات</span>
+                        <span class="preset-badge" onclick="appendPreset('تأجيل لورود تقرير الخبراء')">ورود التقرير</span>
+                        <span class="preset-badge" onclick="appendPreset('تأجيل للاطلاع والرد')">اطلاع ورد</span>
+                        <span class="preset-badge" onclick="appendPreset('حجز الدعوى للحكم')">حجز للحكم</span>
+                        <span class="preset-badge" onclick="appendPreset('شطب الدعوى')">شطب</span>
+                        <span class="preset-badge" onclick="appendPreset('وقف الدعوى جزاءً')">وقف جزائي</span>
+                    </div>
+
+                    <!-- Custom Decision Textarea -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-white">نص القرار أو التأجيل:</label>
+                        <textarea id="decisionInput" class="form-control bg-dark text-white border-secondary" rows="3" placeholder="مثال: تأجيل لجلسة 25 نوفمبر لإعادة الإعلان وسداد الأمانة"></textarea>
+                    </div>
+
+                    <div id="saveFeedback" class="alert d-none small py-2"></div>
+                </div>
+                <div class="modal-footer border-top border-secondary pt-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-warning btn-sm fw-bold px-4" id="btnSaveDecision" onclick="saveDecision()">
+                        <i class="fa-solid fa-cloud-arrow-up me-1"></i> حفظ القرار الآن
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const MACHINE_ID = "{{ machine_id }}";
+        const TODAY_STR = "{{ today_str }}";
+        let decisionModalInstance = null;
+        let currentFilter = 'all';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            decisionModalInstance = new bootstrap.Modal(document.getElementById('decisionModal'));
+        });
+
+        function setFilter(type, btn) {
+            currentFilter = type;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            filterDocket();
+        }
+
+        function filterDocket() {
+            const query = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+            const cards = document.querySelectorAll('.hearing-card');
+
+            cards.forEach(card => {
+                const caseNum = (card.getAttribute('data-case-num') || '').toLowerCase();
+                const client = (card.getAttribute('data-client') || '').toLowerCase();
+                const opponent = (card.getAttribute('data-opponent') || '').toLowerCase();
+                const court = (card.getAttribute('data-court') || '').toLowerCase();
+                const circuit = (card.getAttribute('data-circuit') || '').toLowerCase();
+                const date = card.getAttribute('data-date') || '';
+                const hasDecision = card.getAttribute('data-has-decision') === '1';
+
+                const matchesQuery = !query || caseNum.includes(query) || client.includes(query) || opponent.includes(query) || court.includes(query) || circuit.includes(query);
+
+                let matchesFilter = true;
+                if (currentFilter === 'today') {
+                    matchesFilter = (date === TODAY_STR);
+                } else if (currentFilter === 'tomorrow') {
+                    // Check tomorrow's date
+                    const todayDate = new Date(TODAY_STR);
+                    const tomorrowDate = new Date(todayDate);
+                    tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+                    const tomStr = tomorrowDate.toISOString().split('T')[0];
+                    matchesFilter = (date === tomStr);
+                } else if (currentFilter === 'week') {
+                    const todayDate = new Date(TODAY_STR);
+                    const weekAhead = new Date(todayDate);
+                    weekAhead.setDate(weekAhead.getDate() + 7);
+                    const cDate = new Date(date);
+                    matchesFilter = (cDate >= todayDate && cDate <= weekAhead);
+                } else if (currentFilter === 'undecided') {
+                    matchesFilter = !hasDecision;
+                } else if (currentFilter === 'decided') {
+                    matchesFilter = hasDecision;
+                }
+
+                if (matchesQuery && matchesFilter) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function openDecisionModal(hearingId, caseNum, currentDecision) {
+            document.getElementById('modalHearingId').value = hearingId;
+            document.getElementById('modalCaseNum').innerText = caseNum;
+            document.getElementById('decisionInput').value = currentDecision || '';
+            const fb = document.getElementById('saveFeedback');
+            fb.className = 'alert d-none small py-2';
+            fb.innerText = '';
+            decisionModalInstance.show();
+        }
+
+        function appendPreset(text) {
+            const input = document.getElementById('decisionInput');
+            if (input.value.trim() === '') {
+                input.value = text;
+            } else {
+                input.value = input.value + ' - ' + text;
+            }
+        }
+
+        function saveDecision() {
+            const hearingId = document.getElementById('modalHearingId').value;
+            const decisionText = document.getElementById('decisionInput').value.trim();
+            const btn = document.getElementById('btnSaveDecision');
+            const fb = document.getElementById('saveFeedback');
+
+            if (!decisionText) {
+                fb.className = 'alert alert-danger small py-2';
+                fb.innerText = 'يرجى كتابة نص القرار أو اختيار قرار سريع.';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> جاري الحفظ...';
+
+            fetch('/api/court/record-decision', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    machine_id: MACHINE_ID,
+                    hearing_id: hearingId,
+                    decision: decisionText
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up me-1"></i> حفظ القرار الآن';
+
+                if (data.success) {
+                    fb.className = 'alert alert-success small py-2';
+                    fb.innerText = '✅ تم تسجيل القرار بنجاح وسيتزامن مع كمبيوتر المكتب فور تشغيله.';
+
+                    // Update Card in DOM immediately
+                    const card = document.getElementById('card-' + hearingId);
+                    if (card) {
+                        card.setAttribute('data-has-decision', '1');
+                        card.classList.add('decided-card');
+                        const box = document.getElementById('decision-box-' + hearingId);
+                        box.innerHTML = `
+                            <div class="decision-display" id="decision-text-${hearingId}">
+                                <i class="fa-solid fa-circle-check mt-1 text-success"></i>
+                                <div class="flex-grow-1">
+                                    <span class="d-block text-white-50 small" style="font-size: 0.72rem;">قرار الجلسة المسجل:</span>
+                                    <span>${escapeHtml(decisionText)}</span>
+                                </div>
+                                <button type="button" class="btn-edit-decision" onclick="openDecisionModal('${hearingId}', '${escapeHtml(card.getAttribute('data-case-num'))}', '${escapeHtml(decisionText)}')">
+                                    تعديل
+                                </button>
+                            </div>
+                        `;
+                    }
+
+                    setTimeout(() => {
+                        decisionModalInstance.hide();
+                    }, 900);
+                } else {
+                    fb.className = 'alert alert-danger small py-2';
+                    fb.innerText = 'خطأ أثناء الحفظ: ' + (data.message || 'فشلت العملية');
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up me-1"></i> حفظ القرار الآن';
+                fb.className = 'alert alert-danger small py-2';
+                fb.innerText = 'تعذر الاتصال بالسيرفر السحابي: ' + err.message;
+            });
+        }
+
+        function escapeHtml(str) {
+            return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+    </script>
+</body>
+</html>
