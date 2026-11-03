@@ -554,7 +554,8 @@
             <button class="filter-btn" data-filter="decided" onclick="setFilter('decided', this)">تم تسجيل القرار</button>
         </div>
 
-        <!-- Lawyer Filter Dropdown -->
+        {% if is_admin %}
+        <!-- Lawyer Filter Dropdown (Managerial Oversight Only) -->
         <div class="mt-2 pt-2 border-top border-secondary">
             <div class="d-flex align-items-center gap-2">
                 <span class="small fw-bold text-warning text-nowrap"><i class="fa-solid fa-user-tie me-1"></i> تصفية بمحامي الجلسة:</span>
@@ -571,6 +572,7 @@
                 </select>
             </div>
         </div>
+        {% endif %}
     </div>
 
     <!-- Hearings Docket List -->
@@ -986,21 +988,14 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             decisionModalInstance = new bootstrap.Modal(document.getElementById('decisionModal'));
-
-            // Auto-filter by logged lawyer if applicable
-            {% if logged_lawyer and logged_lawyer.name %}
-            const filterSel = document.getElementById('lawyerFilter');
-            const lawyerName = "{{ logged_lawyer.name }}";
-            if (filterSel) {
-                for (let i = 0; i < filterSel.options.length; i++) {
-                    const opt = filterSel.options[i];
-                    if (opt.value !== 'all' && (lawyerName.includes(opt.value) || opt.text.includes(lawyerName))) {
-                        filterSel.selectedIndex = i;
-                        filterDocket();
-                        break;
-                    }
-                }
+            const completeTaskModalEl = document.getElementById('completeTaskModal');
+            if (completeTaskModalEl) {
+                completeTaskModalInstance = new bootstrap.Modal(completeTaskModalEl);
             }
+
+            // Auto-switch to tasks tab if lawyer has only tasks and no hearings
+            {% if (not hearings or hearings|length == 0) and (tasks and tasks|length > 0) %}
+            switchMainTab('tasks');
             {% endif %}
         });
 
@@ -1013,9 +1008,10 @@
 
         function filterDocket() {
             const query = (document.getElementById('searchInput').value || '').trim().toLowerCase();
-            const cards = document.querySelectorAll('.hearing-card');
+            const cards = document.querySelectorAll('#docketContainer .hearing-card');
 
-            const lawyerSel = (document.getElementById('lawyerFilter') ? document.getElementById('lawyerFilter').value : 'all').toLowerCase();
+            const lawyerFilterEl = document.getElementById('lawyerFilter');
+            const lawyerSel = (lawyerFilterEl ? lawyerFilterEl.value : 'all').toLowerCase();
 
             cards.forEach(card => {
                 const caseNum = (card.getAttribute('data-case-num') || '').toLowerCase();
@@ -1028,7 +1024,16 @@
                 const hasDecision = card.getAttribute('data-has-decision') === '1';
 
                 const matchesQuery = !query || caseNum.includes(query) || client.includes(query) || opponent.includes(query) || court.includes(query) || circuit.includes(query);
-                const matchesLawyer = (lawyerSel === 'all') || lawyer.includes(lawyerSel);
+                
+                {% if not is_admin %}
+                const matchesLawyer = true;
+                {% else %}
+                let matchesLawyer = (lawyerSel === 'all') || lawyer.includes(lawyerSel);
+                if (!matchesLawyer && lawyerSel !== 'all') {
+                    const parts = lawyerSel.split(/\s+/).filter(p => p.length >= 3);
+                    matchesLawyer = parts.some(p => lawyer.includes(p));
+                }
+                {% endif %}
 
                 let matchesFilter = true;
                 if (currentFilter === 'today') {
