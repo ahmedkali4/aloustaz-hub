@@ -554,8 +554,7 @@
             <button class="filter-btn" data-filter="decided" onclick="setFilter('decided', this)">تم تسجيل القرار</button>
         </div>
 
-        {% if is_admin %}
-        <!-- Lawyer Filter Dropdown (Managerial Oversight Only) -->
+        <!-- Lawyer Filter Dropdown -->
         <div class="mt-2 pt-2 border-top border-secondary">
             <div class="d-flex align-items-center gap-2">
                 <span class="small fw-bold text-warning text-nowrap"><i class="fa-solid fa-user-tie me-1"></i> تصفية بمحامي الجلسة:</span>
@@ -572,7 +571,6 @@
                 </select>
             </div>
         </div>
-        {% endif %}
     </div>
 
     <!-- Hearings Docket List -->
@@ -821,9 +819,10 @@
     </div>
 
     <!-- Record Decision Modal -->
+    <!-- Record Decision Modal with DatePicker & Presets -->
     <div class="modal fade" id="decisionModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content shadow-lg">
+            <div class="modal-content shadow-lg bg-dark text-white border border-secondary">
                 <div class="modal-header border-bottom border-secondary pb-2">
                     <h5 class="modal-title fw-bold fs-6">
                         <i class="fa-solid fa-gavel text-warning me-2"></i>
@@ -834,37 +833,83 @@
                 <div class="modal-body pt-3">
                     <input type="hidden" id="modalHearingId">
 
-                    <!-- Quick Presets -->
-                    <label class="form-label text-muted small fw-bold mb-1">خيارات سريعة (اضغط للإدراج الفوري):</label>
+                    <!-- Decision Type Selector -->
                     <div class="mb-3">
-                        <span class="preset-badge" onclick="appendPreset('تأجيل لإعادة الإعلان')">إعادة إعلان</span>
-                        <span class="preset-badge" onclick="appendPreset('تأجيل للمذكرات والمستندات')">مذكرات ومستندات</span>
-                        <span class="preset-badge" onclick="appendPreset('تأجيل لورود تقرير الخبراء')">ورود التقرير</span>
-                        <span class="preset-badge" onclick="appendPreset('تأجيل للاطلاع والرد')">اطلاع ورد</span>
-                        <span class="preset-badge" onclick="appendPreset('حجز الدعوى للحكم')">حجز للحكم</span>
-                        <span class="preset-badge" onclick="appendPreset('شطب الدعوى')">شطب</span>
-                        <span class="preset-badge" onclick="appendPreset('وقف الدعوى جزاءً')">وقف جزائي</span>
+                        <label class="form-label fw-bold small text-warning"><i class="fa-solid fa-gavel me-1"></i> نوع القرار المتخذ للجلسة:</label>
+                        <div class="d-flex flex-wrap gap-2 mb-2">
+                            <button type="button" class="btn btn-sm btn-outline-warning active" id="btnTypePostpone" onclick="setDecisionType('postpone')">
+                                <i class="fa-solid fa-calendar-plus me-1"></i> تأجيل لجلسة قادمة
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-info" id="btnTypeJudgment" onclick="setDecisionType('judgment')">
+                                <i class="fa-solid fa-scale-balanced me-1"></i> حجز للحكم
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" id="btnTypeDismiss" onclick="setDecisionType('dismiss')">
+                                <i class="fa-solid fa-ban me-1"></i> شطب الدعوى
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnTypeOther" onclick="setDecisionType('other')">
+                                <i class="fa-solid fa-pen-nib me-1"></i> قرار آخر
+                            </button>
+                        </div>
                     </div>
 
+                    <!-- Postponement DatePicker Section -->
+                    <div id="postponeFieldsSection" class="p-3 mb-3 rounded bg-secondary bg-opacity-25 border border-warning border-opacity-50">
+                        <div class="row g-2 mb-2">
+                            <div class="col-7">
+                                <label class="form-label fw-bold small text-white">
+                                    <i class="fa-solid fa-calendar-day text-warning me-1"></i> تاريخ الجلسة القادمة (تأجيل):
+                                </label>
+                                <input type="date" id="nextHearingDateInput" class="form-control form-control-sm bg-dark text-white border-warning fw-bold text-center" onchange="updateDecisionText()">
+                            </div>
+                            <div class="col-5 d-flex align-items-end">
+                                <span class="badge bg-warning text-dark py-2 px-2 w-100 text-center small fw-bold" id="nextDayNameBadge">حدد التاريخ</span>
+                            </div>
+                        </div>
+
+                        <!-- Quick Date Presets -->
+                        <div class="d-flex flex-wrap gap-1 mb-3">
+                            <span class="badge bg-dark border border-secondary text-light cursor-pointer px-2 py-1" onclick="quickAddDays(7)">+ أسبوع</span>
+                            <span class="badge bg-dark border border-secondary text-light cursor-pointer px-2 py-1" onclick="quickAddDays(14)">+ أسبوعين</span>
+                            <span class="badge bg-dark border border-secondary text-light cursor-pointer px-2 py-1" onclick="quickAddDays(21)">+ 3 أسابيع</span>
+                            <span class="badge bg-dark border border-secondary text-light cursor-pointer px-2 py-1" onclick="quickAddDays(30)">+ شهر</span>
+                        </div>
+
+                        <!-- Requirements / Reason for Adjournment -->
+                        <label class="form-label fw-bold small text-white">
+                            <i class="fa-solid fa-list-check text-warning me-1"></i> المطلوب في الجلسة القادمة:
+                        </label>
+                        <input type="text" id="nextHearingReqInput" class="form-control form-control-sm bg-dark text-white border-secondary mb-2" placeholder="مثال: للمستندات والمذكرات / للإعلان بأصل الصحيفة" oninput="updateDecisionText()">
+                        <div class="d-flex flex-wrap gap-1">
+                            <span class="badge bg-secondary bg-opacity-50 text-light cursor-pointer px-2 py-1" onclick="setReq('للمستندات والمذكرات')">للمستندات</span>
+                            <span class="badge bg-secondary bg-opacity-50 text-light cursor-pointer px-2 py-1" onclick="setReq('للإعلان بأصل الصحيفة')">للإعلان</span>
+                            <span class="badge bg-secondary bg-opacity-50 text-light cursor-pointer px-2 py-1" onclick="setReq('لإعادة الإعلان وعرض الصلح')">لإعادة الإعلان</span>
+                            <span class="badge bg-secondary bg-opacity-50 text-light cursor-pointer px-2 py-1" onclick="setReq('لورود تقرير الخبير')">لورود التقرير</span>
+                            <span class="badge bg-secondary bg-opacity-50 text-light cursor-pointer px-2 py-1" onclick="setReq('للمرافعة الختامية')">للمرافعة</span>
+                        </div>
+                    </div>
+
+                    <!-- Lawyer Selector -->
                     <div class="mb-2">
                         <label class="form-label fw-bold small text-white"><i class="fa-solid fa-user-pen me-1 text-warning"></i> اسم المحامي مسجل القرار:</label>
                         <select id="recordingLawyer" class="form-select form-select-sm bg-dark text-white border-secondary">
-                            <option value="أ. محمود سيف الدين النجار">أ. محمود سيف الدين النجار (نقض)</option>
-                            <option value="أ. شريف عبد المنعم القاضي">أ. شريف عبد المنعم القاضي (استئناف)</option>
-                            <option value="أ. هاني ممدوح رضوان">أ. هاني ممدوح رضوان (استئناف)</option>
-                            <option value="أ. نرمين فؤاد الباشا">أ. نرمين فؤاد الباشا (ابتدائي)</option>
-                            <option value="أ. كريم إيهاب الديب">أ. كريم إيهاب الديب (متدرب)</option>
-                            <option value="أ. سارة طارق الجوهري">أ. سارة طارق الجوهري (متدربة)</option>
-                            <option value="أ. عمر حسام الصاوي">أ. عمر حسام الصاوي (متدرب)</option>
-                            <option value="أ. ميادة وحيد الألفي">أ. ميادة وحيد الألفي (متدربة)</option>
-                            <option value="الأستاذ أحمد مبروك">الأستاذ أحمد مبروك (المحامي بالنقض)</option>
+                            {% if docket_lawyers %}
+                                {% for l in docket_lawyers %}
+                                <option value="{{ l }}">{{ l }}</option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="الأستاذ شريف محمد محمود">الأستاذ شريف محمد محمود (نقض)</option>
+                                <option value="الأستاذة أمل أحمد هديب">الأستاذة أمل أحمد هديب (استئناف)</option>
+                                <option value="الأستاذ محمد شحاته عبد المجيد">الأستاذ محمد شحاته عبد المجيد (استئناف)</option>
+                                <option value="الأستاذ سمير سيد حسين">الأستاذ سمير سيد حسين (ابتدائي)</option>
+                                <option value="الأستاذ أحمد مبروك">الأستاذ أحمد مبروك (المحامي بالنقض)</option>
+                            {% endif %}
                         </select>
                     </div>
 
-                    <!-- Custom Decision Textarea -->
+                    <!-- Custom Decision Textarea (Auto-synchronized) -->
                     <div class="mb-3">
-                        <label class="form-label fw-bold small text-white">نص القرار أو التأجيل:</label>
-                        <textarea id="decisionInput" class="form-control bg-dark text-white border-secondary" rows="3" placeholder="مثال: تأجيل لجلسة 25 نوفمبر لإعادة الإعلان وسداد الأمانة"></textarea>
+                        <label class="form-label fw-bold small text-white">نص القرار النهائي المسجل في الرول والمكتب:</label>
+                        <textarea id="decisionInput" class="form-control bg-dark text-white border-secondary fw-semibold" rows="2" placeholder="سيتم صياغة نص القرار تلقائياً ويمكنك التعديل عليه..."></textarea>
                     </div>
 
                     <div id="saveFeedback" class="alert d-none small py-2"></div>
@@ -872,11 +917,14 @@
                 <div class="modal-footer border-top border-secondary pt-2">
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">إلغاء</button>
                     <button type="button" class="btn btn-warning btn-sm fw-bold px-4" id="btnSaveDecision" onclick="saveDecision()">
-                        <i class="fa-solid fa-cloud-arrow-up me-1"></i> حفظ القرار الآن
+                        <i class="fa-solid fa-cloud-arrow-up me-1"></i> حفظ القرار وتحديث الجلسة
                     </button>
                 </div>
             </div>
         </div>
+    </div>
+
+    </div>
     </div>
 
     <!-- Bootstrap JS -->
@@ -988,14 +1036,21 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             decisionModalInstance = new bootstrap.Modal(document.getElementById('decisionModal'));
-            const completeTaskModalEl = document.getElementById('completeTaskModal');
-            if (completeTaskModalEl) {
-                completeTaskModalInstance = new bootstrap.Modal(completeTaskModalEl);
-            }
 
-            // Auto-switch to tasks tab if lawyer has only tasks and no hearings
-            {% if (not hearings or hearings|length == 0) and (tasks and tasks|length > 0) %}
-            switchMainTab('tasks');
+            // Auto-filter by logged lawyer if applicable
+            {% if logged_lawyer and logged_lawyer.name %}
+            const filterSel = document.getElementById('lawyerFilter');
+            const lawyerName = "{{ logged_lawyer.name }}";
+            if (filterSel) {
+                for (let i = 0; i < filterSel.options.length; i++) {
+                    const opt = filterSel.options[i];
+                    if (opt.value !== 'all' && (lawyerName.includes(opt.value) || opt.text.includes(lawyerName))) {
+                        filterSel.selectedIndex = i;
+                        filterDocket();
+                        break;
+                    }
+                }
+            }
             {% endif %}
         });
 
@@ -1008,10 +1063,9 @@
 
         function filterDocket() {
             const query = (document.getElementById('searchInput').value || '').trim().toLowerCase();
-            const cards = document.querySelectorAll('#docketContainer .hearing-card');
+            const cards = document.querySelectorAll('.hearing-card');
 
-            const lawyerFilterEl = document.getElementById('lawyerFilter');
-            const lawyerSel = (lawyerFilterEl ? lawyerFilterEl.value : 'all').toLowerCase();
+            const lawyerSel = (document.getElementById('lawyerFilter') ? document.getElementById('lawyerFilter').value : 'all').toLowerCase();
 
             cards.forEach(card => {
                 const caseNum = (card.getAttribute('data-case-num') || '').toLowerCase();
@@ -1024,16 +1078,7 @@
                 const hasDecision = card.getAttribute('data-has-decision') === '1';
 
                 const matchesQuery = !query || caseNum.includes(query) || client.includes(query) || opponent.includes(query) || court.includes(query) || circuit.includes(query);
-                
-                {% if not is_admin %}
-                const matchesLawyer = true;
-                {% else %}
-                let matchesLawyer = (lawyerSel === 'all') || lawyer.includes(lawyerSel);
-                if (!matchesLawyer && lawyerSel !== 'all') {
-                    const parts = lawyerSel.split(/\s+/).filter(p => p.length >= 3);
-                    matchesLawyer = parts.some(p => lawyer.includes(p));
-                }
-                {% endif %}
+                const matchesLawyer = (lawyerSel === 'all') || lawyer.includes(lawyerSel);
 
                 let matchesFilter = true;
                 if (currentFilter === 'today') {
@@ -1065,10 +1110,135 @@
             });
         }
 
+        function appendPreset(text) {
+            const input = document.getElementById('decisionInput');
+            if (input.value.trim() === '') {
+                input.value = text;
+            } else {
+                input.value = input.value + ' - ' + text;
+            }
+        }
+
+        function escapeHtml(str) {
+            return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+    
+        let currentDecisionType = 'postpone';
+        const ARABIC_DAYS = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
+        function updateDayBadge(dateStr) {
+            const badge = document.getElementById('nextDayNameBadge');
+            if (!badge) return;
+            if (!dateStr) {
+                badge.innerText = 'حدد التاريخ';
+                badge.className = 'badge bg-secondary text-white py-2 px-2 w-100 text-center small fw-bold';
+                return;
+            }
+            try {
+                const parts = dateStr.split('-');
+                if (parts.length === 3) {
+                    const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                    const dayName = ARABIC_DAYS[d.getDay()];
+                    badge.innerText = dayName;
+                    badge.className = 'badge bg-warning text-dark py-2 px-2 w-100 text-center small fw-bold';
+                }
+            } catch(e) {
+                badge.innerText = 'حدد التاريخ';
+            }
+        }
+
+        function quickAddDays(days) {
+            const d = new Date();
+            d.setDate(d.getDate() + days);
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            const dateVal = `${yyyy}-${mm}-${dd}`;
+            const dateInput = document.getElementById('nextHearingDateInput');
+            if (dateInput) {
+                dateInput.value = dateVal;
+                updateDayBadge(dateVal);
+                updateDecisionText();
+            }
+        }
+
+        function setReq(reqText) {
+            const reqInput = document.getElementById('nextHearingReqInput');
+            if (reqInput) {
+                reqInput.value = reqText;
+                updateDecisionText();
+            }
+        }
+
+        function setDecisionType(type) {
+            currentDecisionType = type;
+            const btnP = document.getElementById('btnTypePostpone');
+            const btnJ = document.getElementById('btnTypeJudgment');
+            const btnD = document.getElementById('btnTypeDismiss');
+            const btnO = document.getElementById('btnTypeOther');
+            const secPostpone = document.getElementById('postponeFieldsSection');
+            const decInput = document.getElementById('decisionInput');
+
+            [btnP, btnJ, btnD, btnO].forEach(b => { if(b) b.classList.remove('active'); });
+
+            if (type === 'postpone') {
+                if(btnP) btnP.classList.add('active');
+                if(secPostpone) secPostpone.style.display = 'block';
+                if (!document.getElementById('nextHearingDateInput').value) {
+                    quickAddDays(7);
+                } else {
+                    updateDecisionText();
+                }
+            } else {
+                if(secPostpone) secPostpone.style.display = 'none';
+                if (type === 'judgment') {
+                    if(btnJ) btnJ.classList.add('active');
+                    if(decInput) decInput.value = 'حجز الدعوى للحكم';
+                } else if (type === 'dismiss') {
+                    if(btnD) btnD.classList.add('active');
+                    if(decInput) decInput.value = 'شطب الدعوى';
+                } else if (type === 'other') {
+                    if(btnO) btnO.classList.add('active');
+                    if(decInput) decInput.value = '';
+                }
+            }
+        }
+
+        function updateDecisionText() {
+            if (currentDecisionType !== 'postpone') return;
+            const dateVal = document.getElementById('nextHearingDateInput')?.value || '';
+            const reqVal = document.getElementById('nextHearingReqInput')?.value || '';
+            updateDayBadge(dateVal);
+            let txt = 'تأجيل';
+            if (dateVal) {
+                const parts = dateVal.split('-');
+                let formatted = dateVal;
+                if (parts.length === 3) {
+                    const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                    formatted = `${ARABIC_DAYS[d.getDay()]} ${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+                txt += ` لجلسة ${formatted}`;
+            }
+            if (reqVal) {
+                txt += ` ${reqVal}`;
+            }
+            const decInput = document.getElementById('decisionInput');
+            if (decInput) {
+                decInput.value = txt;
+            }
+        }
+
         function openDecisionModal(hearingId, caseNum, currentDecision) {
             document.getElementById('modalHearingId').value = hearingId;
             document.getElementById('modalCaseNum').innerText = caseNum;
-            document.getElementById('decisionInput').value = currentDecision || '';
+            
+            setDecisionType('postpone');
+            quickAddDays(7);
+
+            if (currentDecision) {
+                document.getElementById('decisionInput').value = currentDecision;
+            }
+
             const fb = document.getElementById('saveFeedback');
             fb.className = 'alert d-none small py-2';
             fb.innerText = '';
@@ -1086,16 +1256,10 @@
             }
             {% endif %}
 
-            decisionModalInstance.show();
-        }
-
-        function appendPreset(text) {
-            const input = document.getElementById('decisionInput');
-            if (input.value.trim() === '') {
-                input.value = text;
-            } else {
-                input.value = input.value + ' - ' + text;
+            if (!decisionModalInstance) {
+                decisionModalInstance = new bootstrap.Modal(document.getElementById('decisionModal'));
             }
+            decisionModalInstance.show();
         }
 
         function saveDecision() {
@@ -1107,9 +1271,12 @@
             const btn = document.getElementById('btnSaveDecision');
             const fb = document.getElementById('saveFeedback');
 
-            if (!decisionText) {
+            const nextDate = (currentDecisionType === 'postpone') ? (document.getElementById('nextHearingDateInput')?.value || '') : '';
+            const nextReq = (currentDecisionType === 'postpone') ? (document.getElementById('nextHearingReqInput')?.value || '') : '';
+
+            if (!rawDecision) {
                 fb.className = 'alert alert-danger small py-2';
-                fb.innerText = 'يرجى كتابة نص القرار أو اختيار قرار سريع.';
+                fb.innerText = 'يرجى كتابة أو تحديد قرار الجلسة أولاً.';
                 return;
             }
 
@@ -1125,57 +1292,36 @@
                     machine_id: MACHINE_ID,
                     hearing_id: hearingId,
                     decision: decisionText,
-                    lawyer: document.getElementById('recordingLawyer') ? document.getElementById('recordingLawyer').value : ''
+                    lawyer: lawyerName,
+                    next_hearing_date: nextDate,
+                    next_hearing_requirements: nextReq
                 })
             })
             .then(res => res.json())
             .then(data => {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up me-1"></i> حفظ القرار الآن';
+                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up me-1"></i> حفظ القرار وتحديث الجلسة';
 
                 if (data.success) {
                     fb.className = 'alert alert-success small py-2';
-                    fb.innerText = '✅ تم تسجيل القرار بنجاح وسيتزامن مع كمبيوتر المكتب فور تشغيله.';
-
-                    // Update Card in DOM immediately
-                    const card = document.getElementById('card-' + hearingId);
-                    if (card) {
-                        card.setAttribute('data-has-decision', '1');
-                        card.classList.add('decided-card');
-                        const box = document.getElementById('decision-box-' + hearingId);
-                        box.innerHTML = `
-                            <div class="decision-display" id="decision-text-${hearingId}">
-                                <i class="fa-solid fa-circle-check mt-1 text-success"></i>
-                                <div class="flex-grow-1">
-                                    <span class="d-block text-white-50 small" style="font-size: 0.72rem;">قرار الجلسة المسجل:</span>
-                                    <span>${escapeHtml(decisionText)}</span>
-                                </div>
-                                <button type="button" class="btn-edit-decision" onclick="openDecisionModal('${hearingId}', '${escapeHtml(card.getAttribute('data-case-num'))}', '${escapeHtml(decisionText)}')">
-                                    تعديل
-                                </button>
-                            </div>
-                        `;
-                    }
-
+                    fb.innerText = '✅ تم تسجيل القرار ومزامنة تاريخ الجلسة القادمة بنجاح!';
                     setTimeout(() => {
-                        decisionModalInstance.hide();
-                    }, 900);
+                        if (decisionModalInstance) decisionModalInstance.hide();
+                        location.reload();
+                    }, 1000);
                 } else {
                     fb.className = 'alert alert-danger small py-2';
-                    fb.innerText = 'خطأ أثناء الحفظ: ' + (data.message || 'فشلت العملية');
+                    fb.innerText = '❌ ' + (data.message || 'حدث خطأ أثناء الحفظ');
                 }
             })
             .catch(err => {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up me-1"></i> حفظ القرار الآن';
+                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up me-1"></i> حفظ القرار وتحديث الجلسة';
                 fb.className = 'alert alert-danger small py-2';
-                fb.innerText = 'تعذر الاتصال بالسيرفر السحابي: ' + err.message;
+                fb.innerText = '❌ تعذر الاتصال بالسيرفر السحابي.';
             });
         }
 
-        function escapeHtml(str) {
-            return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-        }
     </script>
 </body>
 </html>
