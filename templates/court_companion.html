@@ -819,11 +819,11 @@
     </div>
 
     <!-- Record Decision Modal -->
-    <!-- Record Decision Modal with DatePicker & Presets -->
+    <!-- Record Decision Modal with DatePicker & Presets (Adjournment & Judgment) -->
     <div class="modal fade" id="decisionModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content shadow-lg bg-dark text-white border border-secondary">
-                <div class="modal-header border-bottom border-secondary pb-2">
+                <div class="modal-header border-bottom border-secondary pb-2 bg-gradient">
                     <h5 class="modal-title fw-bold fs-6">
                         <i class="fa-solid fa-gavel text-warning me-2"></i>
                         تسجيل قرار الجلسة - قضية <span id="modalCaseNum" class="text-warning"></span>
@@ -835,56 +835,105 @@
 
                     <!-- Decision Type Selector -->
                     <div class="mb-3">
-                        <label class="form-label fw-bold small text-warning"><i class="fa-solid fa-gavel me-1"></i> نوع القرار المتخذ للجلسة:</label>
-                        <div class="d-flex flex-wrap gap-2 mb-2">
-                            <button type="button" class="btn btn-sm btn-outline-warning active" id="btnTypePostpone" onclick="setDecisionType('postpone')">
+                        <label class="form-label fw-bold small text-warning mb-2">
+                            <i class="fa-solid fa-scale-balanced me-1"></i> نوع القرار المتخذ للجلسة:
+                        </label>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-warning active px-3 py-2 fw-bold" id="btnTypePostpone" onclick="setDecisionType('postpone')">
                                 <i class="fa-solid fa-calendar-plus me-1"></i> تأجيل لجلسة قادمة
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-info" id="btnTypeJudgment" onclick="setDecisionType('judgment')">
-                                <i class="fa-solid fa-scale-balanced me-1"></i> حجز للحكم
+                            <button type="button" class="btn btn-sm btn-outline-info px-3 py-2 fw-bold" id="btnTypeJudgment" onclick="setDecisionType('judgment')">
+                                <i class="fa-solid fa-balance-scale me-1"></i> حجز للحكم (مع ميعاد)
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-danger" id="btnTypeDismiss" onclick="setDecisionType('dismiss')">
+                            <button type="button" class="btn btn-sm btn-outline-danger px-3 py-2 fw-bold" id="btnTypeDismiss" onclick="setDecisionType('dismiss')">
                                 <i class="fa-solid fa-ban me-1"></i> شطب الدعوى
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnTypeOther" onclick="setDecisionType('other')">
-                                <i class="fa-solid fa-pen-nib me-1"></i> قرار آخر
+                            <button type="button" class="btn btn-sm btn-outline-secondary px-3 py-2 fw-bold" id="btnTypeOther" onclick="setDecisionType('other')">
+                                <i class="fa-solid fa-pen-nib me-1"></i> قرار آخر / تمهيدي
                             </button>
                         </div>
                     </div>
 
-                    <!-- Postponement DatePicker Section -->
-                    <div id="postponeFieldsSection" class="p-3 mb-3 rounded bg-secondary bg-opacity-25 border border-warning border-opacity-50">
-                        <div class="row g-2 mb-2">
-                            <div class="col-7">
-                                <label class="form-label fw-bold small text-white">
-                                    <i class="fa-solid fa-calendar-day text-warning me-1"></i> تاريخ الجلسة القادمة (تأجيل):
+                    <!-- Date & Scheduling Section (Active for Postpone, Judgment, and Other) -->
+                    <div id="schedulingFieldsSection" class="p-3 mb-3 rounded bg-secondary bg-opacity-25 border border-warning border-opacity-50">
+                        <!-- DatePicker & Day Badge Header -->
+                        <div class="row g-2 align-items-center mb-2">
+                            <div class="col-12 col-md-7">
+                                <label class="form-label fw-bold small text-white mb-1" id="dateSectionTitle">
+                                    <i class="fa-solid fa-calendar-day text-warning me-1"></i> تاريخ الجلسة القادمة:
                                 </label>
-                                <input type="date" id="nextHearingDateInput" class="form-control form-control-sm bg-dark text-white border-warning fw-bold text-center" onchange="updateDecisionText()">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-warning text-dark fw-bold border-warning">
+                                        <i class="fa-solid fa-calendar-days"></i>
+                                    </span>
+                                    <input type="date" id="nextHearingDateInput" class="form-control form-control-sm bg-dark text-white border-warning fw-bold fs-6 text-center" onchange="onDateManualChange()">
+                                </div>
                             </div>
-                            <div class="col-5 d-flex align-items-end">
-                                <span class="badge bg-warning text-dark py-2 px-2 w-100 text-center small fw-bold" id="nextDayNameBadge">حدد التاريخ</span>
+                            <div class="col-12 col-md-5 d-flex align-items-end">
+                                <div class="w-100 mt-2 mt-md-0">
+                                    <label class="form-label small text-muted mb-1 d-none d-md-block">اليوم:</label>
+                                    <span class="badge bg-warning text-dark py-2 px-3 w-100 text-center fs-6 fw-bold shadow-sm" id="nextDayNameBadge">حدد التاريخ</span>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Quick Date Presets -->
-                        <div class="d-flex flex-wrap gap-1 mb-3">
-                            <span class="badge bg-dark border border-secondary text-light cursor-pointer px-2 py-1" onclick="quickAddDays(7)">+ أسبوع</span>
-                            <span class="badge bg-dark border border-secondary text-light cursor-pointer px-2 py-1" onclick="quickAddDays(14)">+ أسبوعين</span>
-                            <span class="badge bg-dark border border-secondary text-light cursor-pointer px-2 py-1" onclick="quickAddDays(21)">+ 3 أسابيع</span>
-                            <span class="badge bg-dark border border-secondary text-light cursor-pointer px-2 py-1" onclick="quickAddDays(30)">+ شهر</span>
+                        <!-- Quick Date Presets (1 Week up to 3 Months) -->
+                        <div class="mb-3">
+                            <label class="form-label text-light-50 small mb-1">
+                                <i class="fa-solid fa-forward-step text-info me-1"></i> اختصارات القفز الزمني السريع (أو اختر أي تاريخ مخصص من التقويم مباشرة):
+                            </label>
+                            <div class="d-flex flex-wrap gap-1">
+                                <button type="button" class="btn btn-xs btn-outline-light py-1 px-2" onclick="quickAddDays(7)">+ أسبوع</button>
+                                <button type="button" class="btn btn-xs btn-outline-light py-1 px-2" onclick="quickAddDays(14)">+ أسبوعين</button>
+                                <button type="button" class="btn btn-xs btn-outline-light py-1 px-2" onclick="quickAddDays(30)">+ شهر (30 يوم)</button>
+                                <button type="button" class="btn btn-xs btn-outline-light py-1 px-2" onclick="quickAddDays(45)">+ شهر ونصف (45 يوم)</button>
+                                <button type="button" class="btn btn-xs btn-outline-light py-1 px-2" onclick="quickAddDays(60)">+ شهرين (60 يوم)</button>
+                                <button type="button" class="btn btn-xs btn-outline-warning py-1 px-2 fw-bold" onclick="quickAddDays(90)">+ 3 شهور (90 يوم)</button>
+                            </div>
                         </div>
 
-                        <!-- Requirements / Reason for Adjournment -->
-                        <label class="form-label fw-bold small text-white">
-                            <i class="fa-solid fa-list-check text-warning me-1"></i> المطلوب في الجلسة القادمة:
+                        <!-- Sub-section for Postponement Requirements -->
+                        <div id="postponeReqSection">
+                            <label class="form-label fw-bold small text-white mb-1">
+                                <i class="fa-solid fa-list-check text-warning me-1"></i> المطلوب في الجلسة القادمة:
+                            </label>
+                            <input type="text" id="nextHearingReqInput" class="form-control form-control-sm bg-dark text-white border-secondary mb-2" placeholder="مثال: للمستندات والمذكرات / للإعلان بأصل الصحيفة / لسداد الأمانة" oninput="updateDecisionText()">
+                            <div class="d-flex flex-wrap gap-1">
+                                <span class="badge bg-secondary bg-opacity-75 text-light cursor-pointer px-2 py-1" onclick="setReq('للمستندات والمذكرات')">للمستندات والمذكرات</span>
+                                <span class="badge bg-secondary bg-opacity-75 text-light cursor-pointer px-2 py-1" onclick="setReq('للإعلان بأصل الصحيفة')">للإعلان</span>
+                                <span class="badge bg-secondary bg-opacity-75 text-light cursor-pointer px-2 py-1" onclick="setReq('لإعادة الإعلان وعرض الصلح')">لإعادة الإعلان</span>
+                                <span class="badge bg-secondary bg-opacity-75 text-light cursor-pointer px-2 py-1" onclick="setReq('لورود تقرير الخبير')">ورود التقرير</span>
+                                <span class="badge bg-secondary bg-opacity-75 text-light cursor-pointer px-2 py-1" onclick="setReq('لسداد أمانة الخبير')">سداد الأمانة</span>
+                                <span class="badge bg-secondary bg-opacity-75 text-light cursor-pointer px-2 py-1" onclick="setReq('للمرافعة الختامية')">للمرافعة الختامية</span>
+                                <span class="badge bg-secondary bg-opacity-75 text-light cursor-pointer px-2 py-1" onclick="setReq('للاطلاع والرد')">للاطلاع والرد</span>
+                            </div>
+                        </div>
+
+                        <!-- Sub-section for Judgment Details -->
+                        <div id="judgmentNotesSection" style="display: none;">
+                            <label class="form-label fw-bold small text-info mb-1">
+                                <i class="fa-solid fa-pen-fancy text-info me-1"></i> تصريح المذكرات والملاحظات قبل النطق بالحكم:
+                            </label>
+                            <input type="text" id="judgmentReqInput" class="form-control form-control-sm bg-dark text-white border-info mb-2" placeholder="مثال: مع التصريح بمذكرات في أسبوعين" oninput="updateDecisionText()">
+                            <div class="d-flex flex-wrap gap-1">
+                                <span class="badge bg-info bg-opacity-50 text-light cursor-pointer px-2 py-1" onclick="setJudgmentReq('مع التصريح بمذكرات ومستندات في أسبوعين')">تصريح مذكرات (أسبوعين)</span>
+                                <span class="badge bg-info bg-opacity-50 text-light cursor-pointer px-2 py-1" onclick="setJudgmentReq('لتبادل المذكرات خلال الأجل القانوني')">تبادل مذكرات</span>
+                                <span class="badge bg-info bg-opacity-50 text-light cursor-pointer px-2 py-1" onclick="setJudgmentReq('لإيداع المذكرات الختامية')">مذكرات ختامية</span>
+                                <span class="badge bg-info bg-opacity-50 text-light cursor-pointer px-2 py-1" onclick="setJudgmentReq('بدون مذكرات (للنطق فقط)')">بدون مذكرات</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dismiss Reason Section (Active only when Dismiss is selected) -->
+                    <div id="dismissSection" class="p-3 mb-3 rounded bg-danger bg-opacity-10 border border-danger border-opacity-50" style="display: none;">
+                        <label class="form-label fw-bold small text-danger mb-1">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i> سبب الشطب وإمكانية التجديد:
                         </label>
-                        <input type="text" id="nextHearingReqInput" class="form-control form-control-sm bg-dark text-white border-secondary mb-2" placeholder="مثال: للمستندات والمذكرات / للإعلان بأصل الصحيفة" oninput="updateDecisionText()">
-                        <div class="d-flex flex-wrap gap-1">
-                            <span class="badge bg-secondary bg-opacity-50 text-light cursor-pointer px-2 py-1" onclick="setReq('للمستندات والمذكرات')">للمستندات</span>
-                            <span class="badge bg-secondary bg-opacity-50 text-light cursor-pointer px-2 py-1" onclick="setReq('للإعلان بأصل الصحيفة')">للإعلان</span>
-                            <span class="badge bg-secondary bg-opacity-50 text-light cursor-pointer px-2 py-1" onclick="setReq('لإعادة الإعلان وعرض الصلح')">لإعادة الإعلان</span>
-                            <span class="badge bg-secondary bg-opacity-50 text-light cursor-pointer px-2 py-1" onclick="setReq('لورود تقرير الخبير')">لورود التقرير</span>
-                            <span class="badge bg-secondary bg-opacity-50 text-light cursor-pointer px-2 py-1" onclick="setReq('للمرافعة الختامية')">للمرافعة</span>
+                        <div class="d-flex flex-wrap gap-1 mb-2">
+                            <span class="badge bg-danger bg-opacity-50 text-light cursor-pointer px-2 py-1" onclick="setDismissReason('شطبت لعدم حضور الطرفين')">لعدم حضور الطرفين</span>
+                            <span class="badge bg-danger bg-opacity-50 text-light cursor-pointer px-2 py-1" onclick="setDismissReason('شطبت لتخلف المدعي عن الحضور')">لتخلف المدعي</span>
+                            <span class="badge bg-danger bg-opacity-50 text-light cursor-pointer px-2 py-1" onclick="setDismissReason('شطبت لعدم سداد أمانة الخبير')">لعدم سداد الأمانة</span>
+                            <span class="badge bg-warning text-dark cursor-pointer px-2 py-1 fw-bold" onclick="setDismissReason('شطبت مع التنبيه بالتجديد خلال 60 يوماً')">تنبيه بالتجديد (60 يوم)</span>
                         </div>
                     </div>
 
@@ -906,9 +955,12 @@
                         </select>
                     </div>
 
-                    <!-- Custom Decision Textarea (Auto-synchronized) -->
+                    <!-- Final Decision Textarea (Auto-synchronized & Editable) -->
                     <div class="mb-3">
-                        <label class="form-label fw-bold small text-white">نص القرار النهائي المسجل في الرول والمكتب:</label>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label fw-bold small text-white mb-0">نص القرار النهائي المسجل في الرول والمكتب:</label>
+                            <small class="text-muted">يمكنك التعديل اليدوي الحر على هذا النص</small>
+                        </div>
                         <textarea id="decisionInput" class="form-control bg-dark text-white border-secondary fw-semibold" rows="2" placeholder="سيتم صياغة نص القرار تلقائياً ويمكنك التعديل عليه..."></textarea>
                     </div>
 
@@ -922,9 +974,6 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    </div>
     </div>
 
     <!-- Bootstrap JS -->
@@ -1130,21 +1179,27 @@
             const badge = document.getElementById('nextDayNameBadge');
             if (!badge) return;
             if (!dateStr) {
-                badge.innerText = 'حدد التاريخ';
-                badge.className = 'badge bg-secondary text-white py-2 px-2 w-100 text-center small fw-bold';
+                badge.innerText = 'حدد التاريخ من التقويم';
+                badge.className = 'badge bg-secondary text-white py-2 px-3 w-100 text-center fs-6 fw-bold';
                 return;
             }
             try {
                 const parts = dateStr.split('-');
                 if (parts.length === 3) {
-                    const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                    const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
                     const dayName = ARABIC_DAYS[d.getDay()];
                     badge.innerText = dayName;
-                    badge.className = 'badge bg-warning text-dark py-2 px-2 w-100 text-center small fw-bold';
+                    badge.className = 'badge bg-warning text-dark py-2 px-3 w-100 text-center fs-6 fw-bold shadow-sm';
                 }
             } catch(e) {
                 badge.innerText = 'حدد التاريخ';
             }
+        }
+
+        function onDateManualChange() {
+            const dateVal = document.getElementById('nextHearingDateInput')?.value || '';
+            updateDayBadge(dateVal);
+            updateDecisionText();
         }
 
         function quickAddDays(days) {
@@ -1170,60 +1225,106 @@
             }
         }
 
+        function setJudgmentReq(reqText) {
+            const reqInput = document.getElementById('judgmentReqInput');
+            if (reqInput) {
+                reqInput.value = reqText;
+                updateDecisionText();
+            }
+        }
+
+        function setDismissReason(reasonText) {
+            const decInput = document.getElementById('decisionInput');
+            if (decInput) {
+                decInput.value = reasonText;
+            }
+        }
+
         function setDecisionType(type) {
             currentDecisionType = type;
             const btnP = document.getElementById('btnTypePostpone');
             const btnJ = document.getElementById('btnTypeJudgment');
             const btnD = document.getElementById('btnTypeDismiss');
             const btnO = document.getElementById('btnTypeOther');
-            const secPostpone = document.getElementById('postponeFieldsSection');
+
+            const secSched = document.getElementById('schedulingFieldsSection');
+            const secPostReq = document.getElementById('postponeReqSection');
+            const secJudgReq = document.getElementById('judgmentNotesSection');
+            const secDismiss = document.getElementById('dismissSection');
+            const dateTitle = document.getElementById('dateSectionTitle');
             const decInput = document.getElementById('decisionInput');
 
             [btnP, btnJ, btnD, btnO].forEach(b => { if(b) b.classList.remove('active'); });
 
             if (type === 'postpone') {
                 if(btnP) btnP.classList.add('active');
-                if(secPostpone) secPostpone.style.display = 'block';
+                if(secSched) secSched.style.display = 'block';
+                if(secPostReq) secPostReq.style.display = 'block';
+                if(secJudgReq) secJudgReq.style.display = 'none';
+                if(secDismiss) secDismiss.style.display = 'none';
+                if(dateTitle) dateTitle.innerHTML = '<i class="fa-solid fa-calendar-day text-warning me-1"></i> تاريخ الجلسة القادمة (تأجيل):';
+
                 if (!document.getElementById('nextHearingDateInput').value) {
                     quickAddDays(7);
                 } else {
                     updateDecisionText();
                 }
-            } else {
-                if(secPostpone) secPostpone.style.display = 'none';
-                if (type === 'judgment') {
-                    if(btnJ) btnJ.classList.add('active');
-                    if(decInput) decInput.value = 'حجز الدعوى للحكم';
-                } else if (type === 'dismiss') {
-                    if(btnD) btnD.classList.add('active');
-                    if(decInput) decInput.value = 'شطب الدعوى';
-                } else if (type === 'other') {
-                    if(btnO) btnO.classList.add('active');
-                    if(decInput) decInput.value = '';
+            } else if (type === 'judgment') {
+                if(btnJ) btnJ.classList.add('active');
+                if(secSched) secSched.style.display = 'block';
+                if(secPostReq) secPostReq.style.display = 'none';
+                if(secJudgReq) secJudgReq.style.display = 'block';
+                if(secDismiss) secDismiss.style.display = 'none';
+                if(dateTitle) dateTitle.innerHTML = '<i class="fa-solid fa-scale-balanced text-info me-1"></i> تاريخ جلسة النطق بالحكم:';
+
+                if (!document.getElementById('nextHearingDateInput').value) {
+                    quickAddDays(30); // Judgment sessions typically scheduled 1 month ahead
+                } else {
+                    updateDecisionText();
                 }
+            } else if (type === 'dismiss') {
+                if(btnD) btnD.classList.add('active');
+                if(secSched) secSched.style.display = 'none';
+                if(secDismiss) secDismiss.style.display = 'block';
+                if(decInput) decInput.value = 'شطب الدعوى لتخلف الطرفين عن الحضور';
+            } else if (type === 'other') {
+                if(btnO) btnO.classList.add('active');
+                if(secSched) secSched.style.display = 'block';
+                if(secPostReq) secPostReq.style.display = 'block';
+                if(secJudgReq) secJudgReq.style.display = 'none';
+                if(secDismiss) secDismiss.style.display = 'none';
+                if(dateTitle) dateTitle.innerHTML = '<i class="fa-solid fa-calendar-day text-secondary me-1"></i> ميعاد الجلسة أو الإجراء التالي:';
+                if(decInput) decInput.value = '';
             }
         }
 
         function updateDecisionText() {
-            if (currentDecisionType !== 'postpone') return;
             const dateVal = document.getElementById('nextHearingDateInput')?.value || '';
-            const reqVal = document.getElementById('nextHearingReqInput')?.value || '';
             updateDayBadge(dateVal);
-            let txt = 'تأجيل';
+
+            let formattedDate = dateVal;
             if (dateVal) {
                 const parts = dateVal.split('-');
-                let formatted = dateVal;
                 if (parts.length === 3) {
-                    const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-                    formatted = `${ARABIC_DAYS[d.getDay()]} ${parts[2]}/${parts[1]}/${parts[0]}`;
+                    const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                    formattedDate = `${ARABIC_DAYS[d.getDay()]} ${parts[2]}/${parts[1]}/${parts[0]}`;
                 }
-                txt += ` لجلسة ${formatted}`;
             }
-            if (reqVal) {
-                txt += ` ${reqVal}`;
-            }
+
             const decInput = document.getElementById('decisionInput');
-            if (decInput) {
+            if (!decInput) return;
+
+            if (currentDecisionType === 'postpone') {
+                const reqVal = document.getElementById('nextHearingReqInput')?.value || '';
+                let txt = 'تأجيل';
+                if (dateVal) txt += ` لجلسة ${formattedDate}`;
+                if (reqVal) txt += ` ${reqVal}`;
+                decInput.value = txt;
+            } else if (currentDecisionType === 'judgment') {
+                const reqVal = document.getElementById('judgmentReqInput')?.value || '';
+                let txt = 'حجز الدعوى للحكم';
+                if (dateVal) txt += ` لجلسة ${formattedDate}`;
+                if (reqVal) txt += ` ${reqVal}`;
                 decInput.value = txt;
             }
         }
@@ -1271,8 +1372,20 @@
             const btn = document.getElementById('btnSaveDecision');
             const fb = document.getElementById('saveFeedback');
 
-            const nextDate = (currentDecisionType === 'postpone') ? (document.getElementById('nextHearingDateInput')?.value || '') : '';
-            const nextReq = (currentDecisionType === 'postpone') ? (document.getElementById('nextHearingReqInput')?.value || '') : '';
+            let nextDate = '';
+            let nextReq = '';
+
+            if (currentDecisionType === 'postpone') {
+                nextDate = document.getElementById('nextHearingDateInput')?.value || '';
+                nextReq = document.getElementById('nextHearingReqInput')?.value || 'تأجيل لجلسة قادمة';
+            } else if (currentDecisionType === 'judgment') {
+                nextDate = document.getElementById('nextHearingDateInput')?.value || '';
+                const jNote = document.getElementById('judgmentReqInput')?.value || '';
+                nextReq = jNote ? `جلسة نطق بالحكم (${jNote})` : 'جلسة نطق بالحكم';
+            } else if (currentDecisionType === 'other') {
+                nextDate = document.getElementById('nextHearingDateInput')?.value || '';
+                nextReq = document.getElementById('nextHearingReqInput')?.value || 'قرار تمهيدي / جلسة قادمة';
+            }
 
             if (!rawDecision) {
                 fb.className = 'alert alert-danger small py-2';
@@ -1281,7 +1394,7 @@
             }
 
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> جاري الحفظ...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> جاري الحفظ وتحديث الأجندة...';
 
             fetch('/api/court/record-decision', {
                 method: 'POST',
@@ -1322,6 +1435,6 @@
             });
         }
 
-    </script>
+        </script>
 </body>
 </html>
