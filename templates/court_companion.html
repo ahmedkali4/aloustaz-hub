@@ -486,6 +486,27 @@
         </div>
     </header>
 
+    <!-- Main Navigation Tabs: Hearings vs Tasks -->
+    <div class="px-3 pt-2">
+        <div class="d-flex gap-2">
+            <button class="btn btn-warning flex-fill fw-bold rounded-pill shadow-sm py-2" id="btnTabHearings" onclick="switchMainTab('hearings')">
+                <i class="fa-solid fa-scale-balanced me-1"></i> رول الجلسات 
+                <span class="badge bg-dark text-warning ms-1">{{ hearings|length }}</span>
+            </button>
+            <button class="btn btn-outline-info flex-fill fw-bold rounded-pill py-2" id="btnTabTasks" onclick="switchMainTab('tasks')">
+                <i class="fa-solid fa-list-check me-1"></i> تكليفات المحكمة 
+                <span class="badge bg-info text-dark ms-1" id="tasksBadgeCount">{{ tasks|length }}</span>
+            </button>
+        </div>
+    </div>
+
+    {% if not is_admin %}
+    <div class="mx-3 mt-2 p-2 rounded-3 small text-center shadow-sm" style="background: rgba(197, 160, 89, 0.15); border: 1px solid rgba(197, 160, 89, 0.3); color: #ffd27a;">
+        <i class="fa-solid fa-shield-halved me-1"></i>
+        أهلاً أ. <strong>{{ first_name or logged_lawyer.name }}</strong>: يتم عرض الجلسات والتكليفات المخصصة لحضورك وتكليفك فقط.
+    </div>
+    {% endif %}
+
     {% if tunnel_offline_alert %}
     <div class="alert alert-warning m-3 py-2 px-3 rounded-3 small border-0 shadow-sm alert-dismissible fade show" role="alert" style="background: rgba(245, 158, 11, 0.2); color: #ffd27a;">
         <div class="d-flex align-items-center justify-content-between">
@@ -539,14 +560,14 @@
                 <span class="small fw-bold text-warning text-nowrap"><i class="fa-solid fa-user-tie me-1"></i> تصفية بمحامي الجلسة:</span>
                 <select id="lawyerFilter" class="form-select form-select-sm bg-dark text-white border-secondary rounded-pill" onchange="filterDocket()">
                     <option value="all">👥 جميع محامي المكتب (عرض كل الرول)</option>
-                    <option value="محمود سيف الدين">أ. محمود سيف الدين (نقض - جنايات)</option>
-                    <option value="شريف القاضي">أ. شريف القاضي (استئناف - مدني وعقارات)</option>
-                    <option value="هاني رضوان">أ. هاني رضوان (استئناف - تجاري وبنوك)</option>
-                    <option value="نرمين الباشا">أ. نرمين الباشا (ابتدائي - أسرة)</option>
-                    <option value="كريم الديب">أ. كريم الديب (محامٍ متدرب)</option>
-                    <option value="سارة الجوهري">أ. سارة الجوهري (محامية متدربة)</option>
-                    <option value="عمر الصاوي">أ. عمر الصاوي (محامٍ متدرب)</option>
-                    <option value="ميادة الألفي">أ. ميادة الألفي (محامية متدربة)</option>
+                    <option value="أحمد مبروك">الأستاذ أحمد مبروك (المحامي بالنقض)</option>
+                    <option value="شريف عبد المنعم">أ. شريف عبد المنعم القاضي (استئناف - مدني وعقارات)</option>
+                    <option value="هاني ممدوح">أ. هاني ممدوح رضوان (استئناف - تجاري وبنوك)</option>
+                    <option value="نرمين فؤاد">أ. نرمين فؤاد الباشا (ابتدائي - أسرة)</option>
+                    <option value="كريم إيهاب">أ. كريم إيهاب الديب (محامٍ متدرب)</option>
+                    <option value="سارة طارق">أ. سارة طارق الجوهري (محامية متدربة)</option>
+                    <option value="عمر حسام">أ. عمر حسام الصاوي (محامٍ متدرب)</option>
+                    <option value="ميادة وحيد">أ. ميادة وحيد الألفي (محامية متدربة)</option>
                 </select>
             </div>
         </div>
@@ -653,6 +674,7 @@
 
                 <!-- Decision Section -->
                 <div class="decision-section mt-2" id="decision-box-{{ h.local_hearing_id }}">
+                    {% set can_record = (is_admin or (logged_lawyer and (first_name in h.hearing_type or logged_lawyer.name in h.hearing_type))) %}
                     {% if has_decision %}
                     <div class="decision-display" id="decision-text-{{ h.local_hearing_id }}">
                         <i class="fa-solid fa-circle-check mt-1 text-success"></i>
@@ -660,15 +682,23 @@
                             <span class="d-block text-white-50 small" style="font-size: 0.72rem;">قرار الجلسة المسجل:</span>
                             <span>{{ h.lawyer_decision }}</span>
                         </div>
+                        {% if can_record %}
                         <button type="button" class="btn-edit-decision" onclick="openDecisionModal('{{ h.local_hearing_id }}', '{{ h.case_number }}', '{{ h.lawyer_decision|replace('\'', '\\\'') }}')">
                             تعديل
                         </button>
+                        {% endif %}
                     </div>
                     {% else %}
-                    <button type="button" class="btn-record-decision" onclick="openDecisionModal('{{ h.local_hearing_id }}', '{{ h.case_number }}', '')">
-                        <i class="fa-solid fa-gavel"></i>
-                        تسجيل قرار الجلسة الآن
-                    </button>
+                        {% if can_record %}
+                        <button type="button" class="btn-record-decision" onclick="openDecisionModal('{{ h.local_hearing_id }}', '{{ h.case_number }}', '')">
+                            <i class="fa-solid fa-gavel"></i>
+                            تسجيل قرار الجلسة الآن
+                        </button>
+                        {% else %}
+                        <div class="p-2 text-center text-muted small bg-dark bg-opacity-75 rounded border border-secondary">
+                            <i class="fa-solid fa-lock text-warning me-1"></i> الحضور مكلف به: <strong>{{ h.hearing_type }}</strong>
+                        </div>
+                        {% endif %}
                     {% endif %}
                 </div>
 
@@ -682,6 +712,64 @@
                 <button class="btn btn-outline-warning btn-sm" onclick="location.reload();">
                     <i class="fa-solid fa-rotate me-1"></i> إعادة فحص السحابة
                 </button>
+            </div>
+        {% endif %}
+    </main>
+
+    <!-- Court Tasks Container -->
+    <main class="docket-container d-none" id="tasksContainer">
+        {% if tasks and tasks|length > 0 %}
+            {% for t in tasks %}
+            {% set is_done = (t.status == 'مكتمل') %}
+            <div class="hearing-card {{ 'decided-card' if is_done else '' }}" id="task-card-{{ t.local_task_id }}">
+                <div class="card-header-flex">
+                    <div>
+                        <span class="case-number-badge" style="color: #60a5fa;">
+                            <i class="fa-solid fa-clipboard-check me-1"></i> {{ t.task_type or 'تكليف إداري' }}
+                        </span>
+                    </div>
+                    <span class="date-badge {{ 'is-today' if t.due_date == today_str else '' }}">
+                        <i class="fa-regular fa-calendar-check me-1"></i> {{ t.due_date }}
+                        {% if t.due_date == today_str %} (اليوم) {% endif %}
+                    </span>
+                </div>
+
+                <div class="court-row">
+                    <i class="fa-solid fa-landmark text-warning"></i>
+                    <span>{{ t.court_name or 'المحكمة المختصة' }}</span>
+                    {% if t.case_number %}
+                    <span class="badge bg-secondary ms-1">دعوى {{ t.case_number }} {% if t.case_year %}لسنة {{ t.case_year }}{% endif %}</span>
+                    {% endif %}
+                </div>
+
+                <div class="mb-2">
+                    <h6 class="fw-bold text-white mb-1"><i class="fa-solid fa-bullseye text-warning me-1"></i> {{ t.title }}</h6>
+                    <div class="small text-muted">المكلف بالتنفيذ: <strong class="text-info">{{ t.assigned_to_name }}</strong></div>
+                </div>
+
+                <div class="decision-section" id="task-action-box-{{ t.local_task_id }}">
+                    {% if is_done %}
+                    <div class="decision-display">
+                        <i class="fa-solid fa-circle-check mt-1 text-success"></i>
+                        <div class="flex-grow-1">
+                            <span class="d-block text-success small fw-bold">✅ تم إنجاز هذا التكليف بالمحكمة:</span>
+                            <span class="small">{{ t.result_notes or 'تمت المهمة بنجاح.' }}</span>
+                        </div>
+                    </div>
+                    {% else %}
+                    <button type="button" class="btn btn-success w-100 fw-bold py-2 rounded-3 shadow-sm" onclick="openCompleteTaskModal('{{ t.local_task_id }}', '{{ t.title|replace('\'', '\\\'') }}')">
+                        <i class="fa-solid fa-check-double me-1"></i>
+                        تسجيل إنجاز التكليف بالمحكمة
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fa-solid fa-clipboard-check fa-3x text-muted mb-3"></i>
+                <h5 class="fw-bold text-white mb-2">لا توجد تكليفات ميدانية معلقة</h5>
+                <p class="text-muted small">كافة التكليفات الإدارية والميدانية المخصصة لك منجزة ومحدثة بالكامل.</p>
             </div>
         {% endif %}
     </main>
@@ -700,6 +788,35 @@
             </a>
         </div>
     </nav>
+
+        <!-- Complete Task Modal -->
+    <div class="modal fade" id="completeTaskModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg bg-dark text-white border border-secondary">
+                <div class="modal-header border-bottom border-secondary pb-2">
+                    <h5 class="modal-title fw-bold fs-6">
+                        <i class="fa-solid fa-check-double text-success me-2"></i>
+                        إنجاز تكليف: <span id="modalTaskTitle" class="text-warning"></span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body pt-3">
+                    <input type="hidden" id="modalTaskId">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-white">ملاحظات ونتيجة التنفيذ (اختياري):</label>
+                        <textarea id="taskResultNotes" class="form-control bg-dark text-white border-secondary" rows="3" placeholder="مثال: تم تسليم صحيفة الاستئناف لقلم المحضرين وقيدت برقم 4105"></textarea>
+                    </div>
+                    <div id="taskSaveFeedback" class="alert d-none small py-2"></div>
+                </div>
+                <div class="modal-footer border-top border-secondary pt-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-success btn-sm fw-bold px-4" id="btnSaveTask" onclick="submitCompleteTask()">
+                        <i class="fa-solid fa-cloud-arrow-up me-1"></i> تأكيد وحفظ الإنجاز
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Record Decision Modal -->
     <div class="modal fade" id="decisionModal" tabindex="-1" aria-hidden="true">
@@ -730,14 +847,15 @@
                     <div class="mb-2">
                         <label class="form-label fw-bold small text-white"><i class="fa-solid fa-user-pen me-1 text-warning"></i> اسم المحامي مسجل القرار:</label>
                         <select id="recordingLawyer" class="form-select form-select-sm bg-dark text-white border-secondary">
-                            <option value="أ. محمود سيف الدين">أ. محمود سيف الدين (نقض)</option>
-                            <option value="أ. شريف القاضي">أ. شريف القاضي (استئناف)</option>
-                            <option value="أ. هاني رضوان">أ. هاني رضوان (استئناف)</option>
-                            <option value="أ. نرمين الباشا">أ. نرمين الباشا (ابتدائي)</option>
-                            <option value="أ. كريم الديب">أ. كريم الديب (متدرب)</option>
-                            <option value="أ. سارة الجوهري">أ. سارة الجوهري (متدربة)</option>
-                            <option value="أ. عمر الصاوي">أ. عمر الصاوي (متدرب)</option>
-                            <option value="أ. ميادة الألفي">أ. ميادة الألفي (متدربة)</option>
+                            <option value="أ. محمود سيف الدين النجار">أ. محمود سيف الدين النجار (نقض)</option>
+                            <option value="أ. شريف عبد المنعم القاضي">أ. شريف عبد المنعم القاضي (استئناف)</option>
+                            <option value="أ. هاني ممدوح رضوان">أ. هاني ممدوح رضوان (استئناف)</option>
+                            <option value="أ. نرمين فؤاد الباشا">أ. نرمين فؤاد الباشا (ابتدائي)</option>
+                            <option value="أ. كريم إيهاب الديب">أ. كريم إيهاب الديب (متدرب)</option>
+                            <option value="أ. سارة طارق الجوهري">أ. سارة طارق الجوهري (متدربة)</option>
+                            <option value="أ. عمر حسام الصاوي">أ. عمر حسام الصاوي (متدرب)</option>
+                            <option value="أ. ميادة وحيد الألفي">أ. ميادة وحيد الألفي (متدربة)</option>
+                            <option value="الأستاذ أحمد مبروك">الأستاذ أحمد مبروك (المحامي بالنقض)</option>
                         </select>
                     </div>
 
@@ -766,6 +884,104 @@
         const MACHINE_ID = "{{ machine_id }}";
         const TODAY_STR = "{{ today_str }}";
         let decisionModalInstance = null;
+        let completeTaskModalInstance = null;
+
+        function switchMainTab(tab) {
+            const btnHearings = document.getElementById('btnTabHearings');
+            const btnTasks = document.getElementById('btnTabTasks');
+            const docketCont = document.getElementById('docketContainer');
+            const tasksCont = document.getElementById('tasksContainer');
+            const statsBar = document.querySelector('.stats-bar');
+            const searchSec = document.querySelector('.search-section');
+
+            if (tab === 'tasks') {
+                btnTasks.className = 'btn btn-info flex-fill fw-bold rounded-pill shadow-sm py-2 text-dark';
+                btnHearings.className = 'btn btn-outline-warning flex-fill fw-bold rounded-pill py-2';
+                docketCont.classList.add('d-none');
+                tasksCont.classList.remove('d-none');
+                if (statsBar) statsBar.style.display = 'none';
+                if (searchSec) searchSec.style.display = 'none';
+            } else {
+                btnHearings.className = 'btn btn-warning flex-fill fw-bold rounded-pill shadow-sm py-2';
+                btnTasks.className = 'btn btn-outline-info flex-fill fw-bold rounded-pill py-2';
+                tasksCont.classList.add('d-none');
+                docketCont.classList.remove('d-none');
+                if (statsBar) statsBar.style.display = 'flex';
+                if (searchSec) searchSec.style.display = 'block';
+            }
+        }
+
+        function openCompleteTaskModal(taskId, taskTitle) {
+            document.getElementById('modalTaskId').value = taskId;
+            document.getElementById('modalTaskTitle').innerText = taskTitle;
+            document.getElementById('taskResultNotes').value = '';
+            const fb = document.getElementById('taskSaveFeedback');
+            fb.className = 'alert d-none small py-2';
+            fb.innerText = '';
+
+            if (!completeTaskModalInstance) {
+                completeTaskModalInstance = new bootstrap.Modal(document.getElementById('completeTaskModal'));
+            }
+            completeTaskModalInstance.show();
+        }
+
+        function submitCompleteTask() {
+            const taskId = document.getElementById('modalTaskId').value;
+            const notes = document.getElementById('taskResultNotes').value.trim();
+            const btn = document.getElementById('btnSaveTask');
+            const fb = document.getElementById('taskSaveFeedback');
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> جاري الحفظ...';
+
+            fetch('/api/court/complete-task', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    machine_id: MACHINE_ID,
+                    task_id: taskId,
+                    notes: notes
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up me-1"></i> تأكيد وحفظ الإنجاز';
+
+                if (data.success) {
+                    fb.className = 'alert alert-success small py-2';
+                    fb.innerText = data.message || '✅ تم تسجيل الإنجاز بنجاح.';
+
+                    const box = document.getElementById('task-action-box-' + taskId);
+                    if (box) {
+                        box.innerHTML = `
+                            <div class="decision-display">
+                                <i class="fa-solid fa-circle-check mt-1 text-success"></i>
+                                <div class="flex-grow-1">
+                                    <span class="d-block text-success small fw-bold">✅ تم إنجاز هذا التكليف بالمحكمة:</span>
+                                    <span class="small">${escapeHtml(data.result_notes || notes || 'تم الإنجاز بنجاح.')}</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    const card = document.getElementById('task-card-' + taskId);
+                    if (card) card.classList.add('decided-card');
+
+                    setTimeout(() => {
+                        completeTaskModalInstance.hide();
+                    }, 900);
+                } else {
+                    fb.className = 'alert alert-danger small py-2';
+                    fb.innerText = 'خطأ: ' + (data.message || 'فشلت العملية');
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up me-1"></i> تأكيد وحفظ الإنجاز';
+                fb.className = 'alert alert-danger small py-2';
+                fb.innerText = 'خطأ في الاتصال: ' + err.message;
+            });
+        }
         let currentFilter = 'all';
 
         document.addEventListener('DOMContentLoaded', function() {

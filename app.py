@@ -2391,7 +2391,7 @@ def court_companion(machine_id):
     """
     Dedicated 24/7 Mobile Court Companion for Egyptian Lawyers.
     Directly backed by Turso Cloud cache; independent of office PC status.
-    Requires lawyer/staff login to view docket and record decisions under verified name.
+    Requires lawyer/staff login to view personalized docket, court tasks, and record decisions.
     """
     clean_mid = str(machine_id).strip().upper()
     logged_lawyer = session.get(f'court_lawyer_{clean_mid}')
@@ -2418,18 +2418,21 @@ def court_companion(machine_id):
             lawyers=lawyers
         )
 
-    # Lawyer is authenticated: display their interactive court docket
+    # Lawyer is authenticated: Fetch all active hearings and court tasks from Turso cache
     c.execute("""
         SELECT * FROM court_docket_cache 
         WHERE machine_id = ? 
         ORDER BY hearing_date ASC, id ASC
     """, (clean_mid,))
-    hearings = c.fetchall() or []
-    conn.close()
+    all_hearings = c.fetchall() or []
 
-    today_dt = date.today()
-    today_str = today_dt.strftime('%Y-%m-%d')
-    tomorrow_str = (today_dt + timedelta(days=1)).strftime('%Y-%m-%d')
+    c.execute("""
+        SELECT * FROM court_tasks_cache 
+        WHERE machine_id = ? 
+        ORDER BY due_date ASC, id ASC
+    """, (clean_mid,))
+    all_tasks = c.fetchall() or []
+    conn.close()
 
     def _val(row, k):
         try:
@@ -2437,24 +2440,63 @@ def court_companion(machine_id):
         except Exception:
             return getattr(row, k, None)
 
+    # STRICT ROLE & OWNERSHIP ISOLATION
+    is_admin = (logged_lawyer.get('role') == 'admin' or logged_lawyer.get('username') == 'admin')
+    lawyer_full_name = str(logged_lawyer.get('name') or '')
+    lawyer_user = str(logged_lawyer.get('username') or '')
+    first_name = lawyer_full_name.replace('الأستاذ', '').replace('أ.', '').strip().split()[0] if lawyer_full_name else ''
+
+    if is_admin:
+        hearings = all_hearings
+        tasks = all_tasks
+    else:
+        # Regular lawyer / trainee: ONLY show hearings where this lawyer is attending or assigned
+        hearings = []
+        for h in all_hearings:
+            htype = str(_val(h, 'hearing_type') or '')
+            if (first_name and first_name in htype) or (lawyer_full_name and lawyer_full_name in htype):
+                hearings.append(h)
+
+        # ONLY show tasks assigned to this lawyer
+        tasks = []
+        for t in all_tasks:
+            t_user = str(_val(t, 'assigned_to_username') or '')
+            t_name = str(_val(t, 'assigned_to_name') or '')
+            if (lawyer_user and t_user == lawyer_user) or (first_name and first_name in t_name) or (lawyer_full_name and lawyer_full_name in t_name):
+                tasks.append(t)
+
+    today_dt = date.today()
+    today_str = today_dt.strftime('%Y-%m-%d')
+    tomorrow_str = (today_dt + timedelta(days=1)).strftime('%Y-%m-%d')
+
     today_count = sum(1 for h in hearings if _val(h, 'hearing_date') == today_str)
     tomorrow_count = sum(1 for h in hearings if _val(h, 'hearing_date') == tomorrow_str)
     decided_count = sum(1 for h in hearings if (_val(h, 'lawyer_decision') or '').strip() != '')
     total_count = len(hearings)
 
+    tasks_pending = sum(1 for t in tasks if (_val(t, 'status') or '') != 'مكتمل')
+    tasks_completed = sum(1 for t in tasks if (_val(t, 'status') or '') == 'مكتمل')
+    tasks_total = len(tasks)
+
     stats = {
         'today': today_count,
         'tomorrow': tomorrow_count,
         'decided': decided_count,
-        'total': total_count
+        'total': total_count,
+        'tasks_pending': tasks_pending,
+        'tasks_completed': tasks_completed,
+        'tasks_total': tasks_total
     }
 
     resp = make_response(render_template(
         'court_companion.html',
         device=device,
         hearings=hearings,
+        tasks=tasks,
         machine_id=clean_mid,
         logged_lawyer=logged_lawyer,
+        is_admin=is_admin,
+        first_name=first_name,
         today_str=today_str,
         today_arabic=_format_arabic_date(today_dt),
         stats=stats,
@@ -2486,7 +2528,6 @@ def court_login_submit(machine_id):
         if password == expected_pin or password in ['123456', 'admin123', '2026']:
             valid = True
     else:
-        # Fallback for standard office accounts
         if password in ['123456', 'admin123', '2026']:
             valid = True
 
@@ -2564,77 +2605,130 @@ def redirect_to_tunnel(machine_id):
     return resp
 
 
-
 @app.route('/api/court/record-decision', methods=['POST'])
-
 def api_court_record_decision():
-
     """
-
-    Records session postponement/verdict decisions entered by lawyers in court directly to Turso.
-
-    Marks decision_synced_back = 0 so the office PC pulls it automatically on next boot/ping.
-
+    Records session decisions entered by lawyers in court directly to Turso.
+    Strictly verifies that the logged-in lawyer is authorized to attend this session.
+    Marks decision_synced_back = 0 so the office PC pulls it automatically on next ping.
     """
-
     try:
-
         data = request.get_json(silent=True) or request.form
-
         machine_id = str(data.get('machine_id', '')).strip().upper()
-
         local_hearing_id = int(data.get('hearing_id') or data.get('local_hearing_id') or 0)
-
         decision = str(data.get('decision', '')).strip()
 
-
+        logged = session.get(f'court_lawyer_{machine_id}')
+        if not logged:
+            return jsonify({'success': False, 'message': 'عفواً، يجب تسجيل الدخول بحساب المحامي أولاً.'}), 401
 
         if not machine_id or not local_hearing_id or not decision:
-
             return jsonify({'success': False, 'message': 'بيانات غير مكتملة'}), 400
 
-
-
-        now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
         conn = database.get_db()
-
         c = conn.cursor()
 
+        # Check authorization on this specific hearing to prevent tampering
         c.execute("""
-
-            UPDATE court_docket_cache 
-
-            SET lawyer_decision = ?, 
-
-                decision_synced_back = 0, 
-
-                decision_updated_at = ? 
-
+            SELECT hearing_type, lawyer_decision 
+            FROM court_docket_cache 
             WHERE machine_id = ? AND local_hearing_id = ?
+        """, (machine_id, local_hearing_id))
+        h_row = c.fetchone()
+        if not h_row:
+            conn.close()
+            return jsonify({'success': False, 'message': 'الجلسة غير موجودة'}), 404
 
-        """, (decision, now_str, machine_id, local_hearing_id))
+        def _val(row, k):
+            try: return row[k]
+            except Exception: return getattr(row, k, None)
 
+        htype = str(_val(h_row, 'hearing_type') or '')
+        is_admin = (logged.get('role') == 'admin' or logged.get('username') == 'admin')
+        logged_name = str(logged.get('name') or '')
+        logged_first = logged_name.replace('الأستاذ', '').replace('أ.', '').strip().split()[0] if logged_name else ''
+
+        authorized = is_admin or (logged_first and logged_first in htype) or (logged_name and logged_name in htype)
+        if not authorized:
+            conn.close()
+            return jsonify({
+                'success': False,
+                'message': f'عفواً، لا تملك صلاحية تسجيل قرار هذه الجلسة. الحضور مخصص لـ ({htype}) منعاً للتلاعب.'
+            }), 403
+
+        now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        stamped_decision = decision
+        if not decision.startswith('['):
+            stamped_decision = f"[{logged_name}] {decision}"
+
+        c.execute("""
+            UPDATE court_docket_cache 
+            SET lawyer_decision = ?, 
+                decision_synced_back = 0, 
+                decision_updated_at = ? 
+            WHERE machine_id = ? AND local_hearing_id = ?
+        """, (stamped_decision, now_str, machine_id, local_hearing_id))
         conn.commit()
-
         conn.close()
 
+        return jsonify({
+            'success': True,
+            'message': 'تم تسجيل قرار الجلسة بنجاح وسيتم مزامنته تلقائياً مع كمبيوتر المكتب.',
+            'decision': stamped_decision,
+            'updated_at': now_str
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
 
+
+@app.route('/api/court/complete-task', methods=['POST'])
+def api_court_complete_task():
+    """
+    Marks court administrative task completed from mobile.
+    """
+    try:
+        data = request.get_json(silent=True) or request.form
+        machine_id = str(data.get('machine_id', '')).strip().upper()
+        local_task_id = int(data.get('task_id') or 0)
+        notes = str(data.get('notes', '')).strip()
+
+        logged = session.get(f'court_lawyer_{machine_id}')
+        if not logged:
+            return jsonify({'success': False, 'message': 'عفواً، يجب تسجيل الدخول أولاً.'}), 401
+
+        if not machine_id or not local_task_id:
+            return jsonify({'success': False, 'message': 'بيانات غير مكتملة'}), 400
+
+        now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        today_str = date.today().strftime('%Y-%m-%d')
+        lawyer_name = logged.get('name', '')
+
+        result_txt = f"[تم التنفيذ بواسطة: {lawyer_name}]"
+        if notes:
+            result_txt += f" {notes}"
+
+        conn = database.get_db()
+        c = conn.cursor()
+        c.execute("""
+            UPDATE court_tasks_cache 
+            SET status = 'مكتمل', 
+                is_completed = 1, 
+                completed_date = ?, 
+                result_notes = ?, 
+                task_synced_back = 0, 
+                task_updated_at = ? 
+            WHERE machine_id = ? AND local_task_id = ?
+        """, (today_str, result_txt, now_str, machine_id, local_task_id))
+        conn.commit()
+        conn.close()
 
         return jsonify({
-
             'success': True,
-
-            'message': 'تم تسجيل قرار الجلسة بنجاح وسيتم مزامنته تلقائياً مع كمبيوتر المكتب.',
-
-            'decision': decision,
-
-            'updated_at': now_str
-
+            'message': '✅ تم تسجيل إنجاز التكليف بنجاح وسيتم تحديثه في كمبيوتر المكتب فور تشغيله.',
+            'completed_date': today_str,
+            'result_notes': result_txt
         })
-
     except Exception as e:
-
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
