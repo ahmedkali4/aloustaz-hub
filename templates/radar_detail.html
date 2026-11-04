@@ -88,17 +88,44 @@
                     <h5 class="fw-bold text-navy mb-0"><i class="fa-solid fa-chart-pie text-success me-2"></i> مؤشر النشاط الفعلي (Engagement)</h5>
                 </div>
                 <div class="card-body p-3">
-                    <div class="row text-center g-2">
+                    <div class="row text-center g-2 mb-2">
                         <div class="col-6">
-                            <div class="p-3 bg-light rounded border">
+                            <div class="p-3 bg-light rounded border h-100">
                                 <div class="text-muted small">عدد القضايا المدخلة</div>
                                 <div class="fs-3 fw-bold text-primary">{{ device.cases_count|default(0) }}</div>
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="p-3 bg-light rounded border">
+                            <div class="p-3 bg-light rounded border h-100">
                                 <div class="text-muted small">الجلسات المجدولة</div>
                                 <div class="fs-3 fw-bold text-info">{{ device.hearings_count|default(0) }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row text-center g-2">
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded border h-100">
+                                <div class="text-muted small">إجمالي ساعات التشغيل</div>
+                                <div class="fs-4 fw-bold text-navy">
+                                    <i class="fa-solid fa-clock-rotate-left me-1 text-primary"></i>
+                                    {% if (device.operating_minutes|default(0)) < 60 %}
+                                    {{ device.operating_minutes|default(0) }} دقيقة
+                                    {% else %}
+                                    {{ (device.operating_minutes|default(0) / 60.0)|round(1) }} ساعة
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded border h-100">
+                                <div class="text-muted small">حالة الاتصال الآن</div>
+                                <div class="fs-5 fw-bold mt-1">
+                                    {% if device.is_online %}
+                                    <span class="badge bg-success text-white px-2 py-1"><span class="spinner-grow spinner-grow-sm me-1 text-light" style="width:0.5rem;height:0.5rem;"></span> متصل الآن</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary text-white px-2 py-1"><i class="fa-solid fa-power-off me-1"></i> أوفلاين (مغلق)</span>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
                     </div>
