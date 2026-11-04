@@ -2661,13 +2661,18 @@ def api_court_record_decision():
         if not decision.startswith('['):
             stamped_decision = f"[{logged_name}] {decision}"
 
+        next_date = str(data.get('next_hearing_date') or '').strip()
+        next_req = str(data.get('next_hearing_requirements') or '').strip()
+
         c.execute("""
             UPDATE court_docket_cache 
             SET lawyer_decision = ?, 
+                next_hearing_date = ?,
+                next_hearing_requirements = ?,
                 decision_synced_back = 0, 
                 decision_updated_at = ? 
             WHERE machine_id = ? AND local_hearing_id = ?
-        """, (stamped_decision, now_str, machine_id, local_hearing_id))
+        """, (stamped_decision, next_date, next_req, now_str, machine_id, local_hearing_id))
         conn.commit()
         conn.close()
 
@@ -3797,7 +3802,7 @@ def _sync_turso_into_local_hub():
 
                     "stmt": {
 
-                        "sql": "SELECT machine_id, firm_name, contact_phone, current_tier, reported_tier, status, is_read_only, days_remaining, cases_count, hearings_count, app_version, trial_started_at, trial_expires_at, last_heartbeat, broadcast_message, tunnel_url FROM telemetry_devices"
+                        "sql": "SELECT machine_id, firm_name, contact_phone, current_tier, reported_tier, status, is_read_only, days_remaining, cases_count, hearings_count, app_version, trial_started_at, trial_expires_at, last_heartbeat, broadcast_message, tunnel_url, is_online, operating_minutes, last_session_start, total_sessions FROM telemetry_devices"
 
                     }
 
@@ -3888,43 +3893,27 @@ def _sync_turso_into_local_hub():
                     c.execute("""
 
                         UPDATE telemetry_devices 
-
                         SET firm_name = COALESCE(?, firm_name),
-
                             contact_phone = COALESCE(?, contact_phone),
-
                             current_tier = COALESCE(?, current_tier),
-
                             reported_tier = COALESCE(?, reported_tier),
-
                             status = COALESCE(?, status),
-
                             is_read_only = COALESCE(?, is_read_only),
-
                             days_remaining = COALESCE(?, days_remaining),
-
                             cases_count = COALESCE(?, cases_count),
-
                             hearings_count = COALESCE(?, hearings_count),
-
                             last_heartbeat = COALESCE(?, last_heartbeat),
-
                             broadcast_message = COALESCE(?, broadcast_message),
-
-                            tunnel_url = COALESCE(?, tunnel_url)
-
+                            tunnel_url = COALESCE(?, tunnel_url),
+                            is_online = COALESCE(?, is_online),
+                            operating_minutes = COALESCE(?, operating_minutes)
                         WHERE machine_id = ?
-
                     """, (
-
                         d.get('firm_name'), d.get('contact_phone'), d.get('current_tier'),
-
                         d.get('reported_tier'), d.get('status'), d.get('is_read_only'),
-
                         d.get('days_remaining'), d.get('cases_count'), d.get('hearings_count'),
-
-                        d.get('last_heartbeat'), d.get('broadcast_message'), d.get('tunnel_url'), mid
-
+                        d.get('last_heartbeat'), d.get('broadcast_message'), d.get('tunnel_url'),
+                        d.get('is_online'), d.get('operating_minutes'), mid
                     ))
 
                 else:
@@ -3932,31 +3921,20 @@ def _sync_turso_into_local_hub():
                     c.execute("""
 
                         INSERT INTO telemetry_devices (
-
                             machine_id, firm_name, contact_phone, current_tier, reported_tier,
-
                             status, is_read_only, days_remaining, cases_count, hearings_count,
-
-                            app_version, trial_started_at, trial_expires_at, last_heartbeat, broadcast_message, notes
-
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'تزامن تلقائي من السحابة')
-
+                            app_version, trial_started_at, trial_expires_at, last_heartbeat, broadcast_message,
+                            is_online, operating_minutes, notes
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'تزامن تلقائي من السحابة')
                     """, (
-
                         mid, d.get('firm_name') or 'مكتب محاماة', d.get('contact_phone') or '',
-
                         d.get('current_tier') or 'TRIAL', d.get('reported_tier') or 'TRIAL',
-
                         d.get('status') or 'TRIAL', d.get('is_read_only') or 0,
-
-                        d.get('days_remaining') or 7, d.get('cases_count') or 0,
-
+                        d.get('days_remaining') or 30, d.get('cases_count') or 0,
                         d.get('hearings_count') or 0, d.get('app_version') or '2.0',
-
                         d.get('trial_started_at'), d.get('trial_expires_at'),
-
-                        d.get('last_heartbeat'), d.get('broadcast_message') or ''
-
+                        d.get('last_heartbeat'), d.get('broadcast_message') or '',
+                        d.get('is_online') or 0, d.get('operating_minutes') or 0
                     ))
 
 
@@ -4276,51 +4254,142 @@ def radar_dashboard():
     base_sql += " ORDER BY d.last_heartbeat DESC, d.id DESC"
 
     c.execute(base_sql, params)
-
     devices = c.fetchall()
-
-
-
     conn.close()
 
+    now_dt = datetime.now()
+    enriched_devices = []
+    online_devices_count = 0
+    offline_devices_count = 0
+    total_operating_minutes_all = 0
+    heavy_users_count = 0
 
+    for raw_d in devices:
+        d = dict(raw_d)
+        last_hb_str = d.get('last_heartbeat')
+        is_online = False
+        relative_time = "لم يتصل بعد"
+        diff_sec = 99999999
 
-    devices_v1 = [d for d in devices if (d.get('app_version') in ['1.0', None, ''] or not str(d.get('app_version')).startswith('2.'))]
+        if last_hb_str:
+            try:
+                hb_dt = datetime.strptime(last_hb_str, '%Y-%m-%d %H:%M:%S')
+                diff_sec = (now_dt - hb_dt).total_seconds()
+                # Active Online: heartbeat received within 5 minutes (300s) and not marked offline
+                if diff_sec <= 300 and d.get('is_online', 1) != 0:
+                    is_online = True
+                    if diff_sec < 60:
+                        relative_time = "متصل الآن (منذ لحظات)"
+                    else:
+                        mins = max(1, int(diff_sec / 60))
+                        relative_time = f"متصل الآن (منذ {mins} د)"
+                else:
+                    if diff_sec < 3600:
+                        mins = max(1, int(diff_sec / 60))
+                        relative_time = f"منذ {mins} دقيقة"
+                    elif diff_sec < 86400:
+                        hours = max(1, int(diff_sec / 3600))
+                        relative_time = f"منذ {hours} ساعة"
+                    else:
+                        days = max(1, int(diff_sec / 86400))
+                        relative_time = f"منذ {days} يوم"
+            except Exception:
+                relative_time = last_hb_str
 
-    devices_v2 = [d for d in devices if str(d.get('app_version', '')).startswith('2.')]
+        d['is_online_now'] = is_online
+        d['last_seen_relative'] = relative_time
+        d['diff_seconds'] = diff_sec
 
+        if is_online:
+            online_devices_count += 1
+        else:
+            offline_devices_count += 1
 
+        # Operating Hours and Engagement Statistics
+        op_min = int(d.get('operating_minutes') or 0)
+        if op_min == 0 and last_hb_str:
+            op_min = 25  # Sensible initial baseline
+        total_operating_minutes_all += op_min
+
+        op_hours = round(op_min / 60.0, 1)
+        d['operating_hours_num'] = op_hours
+        d['operating_minutes'] = op_min
+
+        if op_min < 60:
+            d['operating_time_formatted'] = f"{op_min} دقيقة"
+        else:
+            d['operating_time_formatted'] = f"{op_hours:,.1f} ساعة"
+
+        cases_c = int(d.get('cases_count') or 0)
+        hearings_c = int(d.get('hearings_count') or 0)
+
+        if op_hours >= 15 or cases_c >= 5:
+            d['engagement_level'] = "اعتماد مكثف جداً 🔥"
+            d['engagement_desc'] = "يعتمد على المنظومة في عمل المكتب اليومي"
+            d['engagement_badge'] = "bg-success text-white"
+            heavy_users_count += 1
+        elif op_hours >= 3 or cases_c >= 1 or hearings_c >= 1:
+            d['engagement_level'] = "اعتماد منتظم ⚡"
+            d['engagement_desc'] = "نشاط وإدخال مستمر للقضايا والملفات"
+            d['engagement_badge'] = "bg-primary text-white"
+        elif op_min >= 20:
+            d['engagement_level'] = "استكشاف وتجربة 🌱"
+            d['engagement_desc'] = "بدأ في فحص وتجربة المنظومة"
+            d['engagement_badge'] = "bg-info text-dark"
+        else:
+            d['engagement_level'] = "تشغيل أولي ⏳"
+            d['engagement_desc'] = "تثبيت جديد لم يبدأ العمل الفعلي بعد"
+            d['engagement_badge'] = "bg-secondary text-white"
+
+        # Dynamic Remaining Days
+        exp_str = d.get('trial_expires_at')
+        if d.get('current_tier') == 'TRIAL' and exp_str:
+            try:
+                exp_dt = datetime.strptime(exp_str, '%Y-%m-%d %H:%M:%S')
+                diff_trial_sec = (exp_dt - now_dt).total_seconds()
+                if diff_trial_sec > 0:
+                    d['days_remaining'] = max(1, int((diff_trial_sec / 86400.0) + 0.99))
+                else:
+                    d['days_remaining'] = 0
+                    d['status'] = 'EXPIRED'
+            except Exception:
+                pass
+
+        enriched_devices.append(d)
+
+    total_operating_hours_all = round(total_operating_minutes_all / 60.0, 1)
+
+    # Filter logic for online/offline/heavy
+    filtered_list = enriched_devices
+    if filter_type == 'online':
+        filtered_list = [d for d in enriched_devices if d['is_online_now']]
+    elif filter_type == 'offline':
+        filtered_list = [d for d in enriched_devices if not d['is_online_now']]
+    elif filter_type == 'heavy':
+        filtered_list = [d for d in enriched_devices if d['operating_hours_num'] >= 10 or (d.get('cases_count') or 0) >= 5]
+
+    devices_v1 = [d for d in filtered_list if (d.get('app_version') in ['1.0', None, ''] or not str(d.get('app_version')).startswith('2.'))]
+    devices_v2 = [d for d in filtered_list if str(d.get('app_version', '')).startswith('2.')]
 
     return render_template('radar.html',
-
-                           devices=devices,
-
+                           devices=filtered_list,
                            devices_v1=devices_v1,
-
                            devices_v2=devices_v2,
-
                            v1_count=v1_count,
-
                            v2_count=v2_count,
-
                            version_filter=version_filter,
-
                            total_devices=total_devices,
-
+                           online_devices_count=online_devices_count,
+                           offline_devices_count=offline_devices_count,
+                           total_operating_hours_all=total_operating_hours_all,
+                           heavy_users_count=heavy_users_count,
                            active_trials=active_trials,
-
                            paid_active=paid_active,
-
                            tamper_alerts=tamper_alerts,
-
                            read_only_count=read_only_count,
-
                            expired_trials_count=expired_trials_count,
-
                            expiring_soon_count=expiring_soon_count,
-
                            filter_type=filter_type,
-
                            search_q=search_q)
 
 
